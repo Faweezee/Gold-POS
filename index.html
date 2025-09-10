@@ -1,14 +1,23 @@
+<!-- Chosen Palette: Gold & Neutral -->
+<!-- Application Structure Plan: The application uses a two-column dashboard layout. The main column on the left is for data entry (Settings, Sales, Expenses) and viewing detailed records (Sales table). The right-hand sidebar is for at-a-glance summaries (financial metrics, turnover chart, expense list) and primary actions (exports). This structure is effective because it separates input tasks from output analysis, allowing users to quickly record transactions while keeping key performance indicators always visible. -->
+<!-- Visualization & Content Choices: 
+- Financial Totals: Displayed as key metrics. Goal is to inform. Presented as styled text for quick reading.
+- Sales Log: Presented in a detailed HTML table. Goal is to organize and allow inspection. The new columns for Cost Price and Sale Price allow for granular profit tracking. Interaction includes deleting individual entries via a button, with a non-blocking confirmation modal to prevent accidental data loss.
+- Expense List: A simple, scrollable list. Goal is to inform. It shows recent expenses without cluttering the main view.
+- Cumulative Turnover: Visualized with an interactive line chart using Chart.js. Goal is to show change over time. A line chart is ideal for visualizing growth trends. It's interactive, providing tooltips on hover for specific data points. Replaces the previous static canvas drawing.
+- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Gold POS — Sales & Finance Tracker (Light)</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root{
       --bg: #f6f5f3;
       --card: #ffffff;
-      --accent: #d4af37; /* gold */
+      --accent: #d4af37;
       --accent-strong: #b8860b;
       --muted: #6b6f76;
       --border: rgba(16,24,36,0.08);
@@ -32,16 +41,17 @@
     h1{font-size:18px;margin:0}
     .controls{display:flex;gap:10px;align-items:center}
 
-    input,select,button,textarea{background:var(--card);border:1px solid var(--border);padding:10px 12px;border-radius:10px;color:var(--text);font-size:14px}
+    input,select,button,textarea{background:var(--card);border:1px solid var(--border);padding:10px 12px;border-radius:10px;color:var(--text);font-size:14px;transition: box-shadow 150ms ease, border-color 150ms ease;}
     input:focus,select:focus,textarea:focus{outline:none;box-shadow:0 0 0 4px rgba(212,175,55,0.08);border-color:var(--accent-strong)}
     button{cursor:pointer;background:linear-gradient(180deg,var(--accent),var(--accent-strong));color:#fff;border:none;padding:9px 12px;border-radius:10px;font-weight:600}
     button.secondary{background:transparent;color:var(--text);border:1px solid var(--border);font-weight:600}
+    button.danger{background: var(--danger); color: white;}
     button.ghost{background:transparent;border:1px dashed rgba(16,24,36,0.06)}
     button:disabled{opacity:0.6;cursor:not-allowed}
 
     .grid{display:grid;grid-template-columns:1fr 360px;gap:var(--gap)}
     .card{background:var(--card);padding:16px;border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow)}
-    .card h3{margin:0 0 10px 0;font-size:15px}
+    .card h3, .card h4{margin:0 0 10px 0;font-size:15px}
     .form-row{display:flex;gap:10px;margin-bottom:12px;align-items:end}
     label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
     table{width:100%;border-collapse:collapse}
@@ -55,11 +65,20 @@
     .table-wrap{max-height:360px;overflow:auto;border-radius:8px}
     .actions{display:flex;gap:8px}
     .chip{padding:6px 12px;border-radius:999px;background:rgba(16,24,36,0.03);font-size:12px}
-
+    footer{text-align:center;margin-top:24px;font-size:12px;color:var(--muted)}
+    
+    .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,36,0.6);display:flex;align-items:center;justify-content:center;z-index:1000;opacity:0;visibility:hidden;transition:opacity 150ms ease, visibility 150ms ease;}
+    .modal-overlay.visible{opacity:1;visibility:visible;}
+    .modal-dialog{background:var(--card);padding:24px;border-radius:var(--radius);box-shadow:var(--shadow);width:90%;max-width:400px;transform:scale(0.95);transition:transform 150ms ease;}
+    .modal-overlay.visible .modal-dialog{transform:scale(1);}
+    .modal-dialog p{margin:0 0 20px 0; font-size: 15px; line-height: 1.5;}
+    .modal-actions{display:flex;justify-content:flex-end;gap:10px;}
+    .chart-container{position:relative;height:150px;width:100%;}
+    
     @media (max-width:1000px){ .grid{grid-template-columns:1fr} .summary{grid-template-columns:repeat(2,1fr)} }
-    @media (max-width:700px){ body{padding:12px} header{flex-direction:column;align-items:flex-start} .controls{width:100%;display:flex;flex-wrap:wrap} .controls .chip{display:none} .form-row{flex-direction:column;align-items:stretch} .form-row > div{width:100% !important} .form-row [style*="width:"]{width:100% !important} #addSale,#addExpense,#saveSettings{width:100%;} .summary{grid-template-columns:1fr} .table-wrap{max-height:260px} canvas{height:120px} .card{padding:12px} .container{padding:0 6px} }
+    @media (max-width:700px){ body{padding:12px} header{flex-direction:column;align-items:flex-start} .controls{width:100%;display:flex;flex-wrap:wrap} .controls .chip{display:none} .form-row{flex-direction:column;align-items:stretch} .form-row > div{width:100% !important} .form-row [style*="width:"]{width:100% !important} #addSale,#addExpense,#saveSettings{width:100%;} .summary{grid-template-columns:1fr} .table-wrap{max-height:260px} .chart-container{height:180px} .card{padding:12px} .container{padding:0 6px} }
     @media (max-width:420px){ .logo{width:40px;height:40px} h1{font-size:16px} input,button{font-size:14px;padding:10px} thead th{font-size:11px} tbody td{padding:8px} }
-    @media (max-width:520px){ .table-wrap{overflow:auto} table{min-width:680px} }
+    @media (max-width:520px){ .table-wrap{overflow-x:auto} table{min-width:680px} }
   </style>
 </head>
 <body>
@@ -78,7 +97,7 @@
         <button id="exportBtn" title="Export CSV">Export CSV</button>
         <button id="downloadJSON" class="secondary" title="Download JSON backup">Backup (JSON)</button>
         <button id="importJSONBtn" class="secondary" title="Import JSON backup">Import (JSON)</button>
-        <button id="clearBtn" class="secondary" title="Clear all data">Clear</button>
+        <button id="clearBtn" class="danger" title="Clear all data">Clear</button>
       </div>
     </header>
 
@@ -92,12 +111,12 @@
               <input id="businessName" placeholder="e.g. ABC Gold Shop" />
             </div>
             <div style="width:160px">
-              <label for="costPerGram">Cost (₦) / gram</label>
-              <input id="costPerGram" type="number" step="0.01" />
+              <label for="defaultCostPerGram">Default cost (₦) / gram</label>
+              <input id="defaultCostPerGram" type="number" step="0.01" />
             </div>
             <div style="width:160px">
-              <label for="sellPerGram">Default sell (₦) / gram</label>
-              <input id="sellPerGram" type="number" step="0.01" />
+              <label for="defaultSellPerGram">Default sell (₦) / gram</label>
+              <input id="defaultSellPerGram" type="number" step="0.01" />
             </div>
             <div style="width:100px;display:flex;align-items:end">
               <button id="saveSettings">Save</button>
@@ -113,18 +132,43 @@
               <input id="saleGrams" type="number" step="0.01" placeholder="e.g. 2.34" />
             </div>
             <div style="width:160px">
-              <label for="salePrice">Price (₦) / gram</label>
+              <label for="salePrice">Sale price (₦) / gram</label>
               <input id="salePrice" type="number" step="0.01" />
             </div>
-            <div style="width:180px">
-              <label for="saleDate">Date & time</label>
-              <input id="saleDate" type="datetime-local" />
+            <div style="width:160px">
+              <label for="costPrice">Cost price (₦) / gram</label>
+              <input id="costPrice" type="number" step="0.01" />
+            </div>
+            <div style="width:180px; display: flex; flex-direction: column;">
+              <label for="saleDate">Date</label>
+              <input id="saleDate" type="date" />
+            </div>
+            <div style="width:120px; display: flex; flex-direction: column;">
+                <label for="saleTime">Time</label>
+                <input id="saleTime" type="time" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div style="flex:1">
+              <label for="goldType">Gold Type</label>
+              <select id="goldType">
+                <option value="24k">24k</option>
+                <option value="22k">22k</option>
+                <option value="18k">18k</option>
+                <option value="14k">14k</option>
+                <option value="10k">10k</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div style="flex:1">
+              <label for="customerName">Customer Name (optional)</label>
+              <input id="customerName" placeholder="e.g. Jane Doe" />
             </div>
             <div style="width:120px;display:flex;align-items:end">
               <button id="addSale">Add sale</button>
             </div>
           </div>
-          <div class="muted small">Tip: set default sell price above. Cost is used from settings to compute profit.</div>
+          <div class="muted small">Tip: Default prices from settings are automatically populated here.</div>
         </div>
 
         <div class="card" style="margin-top:12px">
@@ -166,48 +210,71 @@
             <div class="item" style="grid-column:1 / -1"><div class="small muted">Net Profit</div><div id="netProfit" style="font-weight:700;font-size:20px">₦0</div></div>
           </div>
 
-          <div style="margin-top:12px">
-            <canvas id="turnoverChart"></canvas>
+          <div style="margin-top:12px" class="chart-container">
+            <canvas id="turnoverChartCanvas"></canvas>
           </div>
 
           <div style="margin-top:12px">
             <h4>Expenses</h4>
-            <div id="expensesList" class="muted small" style="max-height:160px;overflow:auto"></div>
+            <div id="expensesList" class="muted small" style="max-height:160px;overflow:auto">No expenses yet.</div>
           </div>
 
-          <div style="margin-top:12px">
-            <h4>Actions</h4>
-            <div class="actions">
-              <button id="exportSummary">Export summary CSV</button>
-            </div>
-          </div>
         </div>
       </aside>
     </div>
 
-    <footer>Data is stored locally in your browser under the key <code>gold-pos-data-v1</code>. Use Backup to download JSON.</footer>
+    <footer>Data is stored locally in your browser. Use the Backup and Import buttons to save or load your data.</footer>
   </div>
 
   <input id="fileInput" type="file" accept="application/json" style="display:none" />
+  
+  <div class="modal-overlay" id="confirmModal">
+    <div class="modal-dialog">
+        <p id="confirmMessage">Are you sure?</p>
+        <div class="modal-actions">
+            <button class="secondary" id="cancelBtn">Cancel</button>
+            <button class="danger" id="confirmBtn">Confirm</button>
+        </div>
+    </div>
+  </div>
 
   <script>
-    // Single-file POS: robust tap/click handlers + removed filter (always show all sales)
     const STORAGE_KEY = 'gold-pos-data-v1';
+    let turnoverChartInstance = null;
 
     function defaultState(){
-      return { businessName: '', costPerGram: 0, sellPerGram: 0, sales: [], expenses: [] };
+      return { businessName: '', defaultCostPerGram: 0, defaultSellPerGram: 0, sales: [], expenses: [] };
     }
 
     function $(id){ return document.getElementById(id); }
+    
+    function showConfirm(message, onConfirm) {
+        const modal = $('confirmModal');
+        const msgEl = $('confirmMessage');
+        const confirmBtn = $('confirmBtn');
+        const cancelBtn = $('cancelBtn');
 
-    // helper: bind both click and pointerup/touchstart safely to work on Android and desktop
-    function bindTap(el, handler){
-      if(!el) return;
-      let locked = false;
-      const run = (e)=>{ if(locked) return; locked = true; try{ handler(e); }finally{ setTimeout(()=>locked=false, 300); } };
-      el.addEventListener('click', run);
-      el.addEventListener('pointerup', run);
-      el.addEventListener('touchend', run);
+        msgEl.textContent = message;
+        
+        const close = () => {
+            modal.classList.remove('visible');
+            confirmBtn.removeEventListener('click', onConfirmClick);
+            cancelBtn.removeEventListener('click', onCancelClick);
+        };
+
+        const onConfirmClick = () => {
+            onConfirm();
+            close();
+        };
+        
+        const onCancelClick = () => {
+            close();
+        };
+
+        confirmBtn.addEventListener('click', onConfirmClick, { once: true });
+        cancelBtn.addEventListener('click', onCancelClick, { once: true });
+        
+        modal.classList.add('visible');
     }
 
     document.addEventListener('DOMContentLoaded', ()=>{
@@ -217,44 +284,57 @@
 
       state = load();
 
-      // populate fields
       if($('businessName')) $('businessName').value = state.businessName || '';
-      if($('costPerGram')) $('costPerGram').value = state.costPerGram || '';
-      if($('sellPerGram')) $('sellPerGram').value = state.sellPerGram || '';
-      if(state.sellPerGram && $('salePrice')) $('salePrice').value = state.sellPerGram;
+      if($('defaultCostPerGram')) $('defaultCostPerGram').value = state.defaultCostPerGram || '';
+      if($('defaultSellPerGram')) $('defaultSellPerGram').value = state.defaultSellPerGram || '';
+      if(state.defaultSellPerGram && $('salePrice')) $('salePrice').value = state.defaultSellPerGram;
+      if(state.defaultCostPerGram && $('costPrice')) $('costPrice').value = state.defaultCostPerGram;
 
       function uid(){ return Math.random().toString(36).slice(2,9); }
       function formatCurrency(n){ return '₦' + Number(n||0).toLocaleString(undefined,{maximumFractionDigits:2}); }
 
-      function showToast(msg, isError=false){ const t=document.createElement('div'); t.textContent=msg; t.style.position='fixed'; t.style.right='16px'; t.style.bottom='20px'; t.style.padding='12px 14px'; t.style.borderRadius='10px'; t.style.boxShadow='0 6px 20px rgba(16,24,36,0.12)'; t.style.fontWeight=600; t.style.background = isError ? 'rgba(123,31,31,0.95)' : 'linear-gradient(90deg,var(--accent),var(--accent-strong))'; t.style.color='#fff'; t.style.zIndex=9999; document.body.appendChild(t); setTimeout(()=>{ t.style.transition='opacity 300ms'; t.style.opacity=0; setTimeout(()=>t.remove(),300); }, 1800); }
-
-      // Save settings
-      bindTap($('saveSettings'), ()=>{
+      function showToast(msg, isError=false){ const t=document.createElement('div'); t.textContent=msg; t.style.position='fixed'; t.style.right='16px'; t.style.bottom='20px'; t.style.padding='12px 14px'; t.style.borderRadius='10px'; t.style.boxShadow='0 6px 20px rgba(16,24,36,0.12)'; t.style.fontWeight=600; t.style.background = isError ? 'var(--danger)' : 'linear-gradient(90deg,var(--accent),var(--accent-strong))'; t.style.color='#fff'; t.style.zIndex=9999; t.style.opacity=0; t.style.transform='translateY(10px)'; document.body.appendChild(t); setTimeout(() => { t.style.transition='opacity 300ms, transform 300ms'; t.style.opacity=1; t.style.transform='translateY(0)'; }, 10); setTimeout(()=>{ t.style.opacity=0; t.style.transform='translateY(10px)'; setTimeout(()=>t.remove(),300); }, 2200); }
+      
+      $('saveSettings').addEventListener('click', ()=>{
         state.businessName = $('businessName').value || '';
-        state.costPerGram = parseFloat($('costPerGram').value) || 0;
-        state.sellPerGram = parseFloat($('sellPerGram').value) || 0;
+        state.defaultCostPerGram = parseFloat($('defaultCostPerGram').value) || 0;
+        state.defaultSellPerGram = parseFloat($('defaultSellPerGram').value) || 0;
         save();
-        if(state.sellPerGram && $('salePrice')) $('salePrice').value = state.sellPerGram;
+        if(state.defaultSellPerGram && $('salePrice')) $('salePrice').value = state.defaultSellPerGram;
+        if(state.defaultCostPerGram && $('costPrice')) $('costPrice').value = state.defaultCostPerGram;
         renderAll();
         showToast('Settings saved');
       });
 
-      // Add sale
       const addSaleBtn = $('addSale');
       function validSale(){ const g = $('saleGrams'); if(!g) return false; const val = parseFloat(g.value); return val && val > 0; }
-      if($('saleGrams')) $('saleGrams').addEventListener('input', ()=>{ if(addSaleBtn) addSaleBtn.disabled = !validSale(); });
-      if(addSaleBtn) { addSaleBtn.disabled = !validSale(); bindTap(addSaleBtn, ()=>{
+      $('saleGrams').addEventListener('input', ()=>{ if(addSaleBtn) addSaleBtn.disabled = !validSale(); });
+      addSaleBtn.disabled = !validSale(); 
+      addSaleBtn.addEventListener('click', ()=>{
         const grams = parseFloat($('saleGrams').value);
-        const price = parseFloat($('salePrice').value) || state.sellPerGram || 0;
-        const dt = $('saleDate').value ? new Date($('saleDate').value) : new Date();
+        const salePrice = parseFloat($('salePrice').value) || state.defaultSellPerGram || 0;
+        const costPrice = parseFloat($('costPrice').value) || state.defaultCostPerGram || 0;
+        const goldType = $('goldType').value;
+        const customerName = $('customerName').value;
+        const saleDate = $('saleDate').value;
+        const saleTime = $('saleTime').value;
+        
+        let dt;
+        if (saleDate && saleTime) {
+            dt = new Date(`${saleDate}T${saleTime}`);
+        } else if (saleDate) {
+            dt = new Date(saleDate);
+        } else {
+            dt = new Date();
+        }
+        
         if(!grams || grams <= 0){ showToast('Enter valid grams', true); return; }
-        state.sales.push({ id: uid(), grams: Number(grams), pricePerGram: Number(price), dateISO: dt.toISOString() });
+        state.sales.push({ id: uid(), grams: Number(grams), salePricePerGram: Number(salePrice), costPricePerGram: Number(costPrice), goldType, customerName, dateISO: dt.toISOString() });
         save();
-        $('saleGrams').value=''; $('saleDate').value=''; addSaleBtn.disabled=true; renderAll(); showToast('Sale added');
-      }); }
+        $('saleGrams').value=''; $('saleDate').value=''; $('saleTime').value=''; $('customerName').value=''; addSaleBtn.disabled=true; renderAll(); showToast('Sale added');
+      });
 
-      // Add expense
-      bindTap($('addExpense'), ()=>{
+      $('addExpense').addEventListener('click', ()=>{
         const desc = $('expenseDesc').value || 'Expense';
         const amount = parseFloat($('expenseAmount').value);
         const dt = $('expenseDate').value ? new Date($('expenseDate').value) : new Date();
@@ -264,39 +344,166 @@
         $('expenseDesc').value=''; $('expenseAmount').value=''; $('expenseDate').value=''; renderAll(); showToast('Expense added');
       });
 
-      // Export CSV (sales + expenses)
-      bindTap($('exportBtn'), exportCSV);
-      bindTap($('exportSummary'), exportCSV);
-      function exportCSV(){ let rows=[['Type','Date','Item','Grams','UnitPrice','Revenue','Cost','Profit','Amount']]; for(const s of state.sales){ const revenue = s.grams*s.pricePerGram; const cost=s.grams*(state.costPerGram||0); rows.push(['Sale', new Date(s.dateISO).toISOString(), state.businessName||'', s.grams, s.pricePerGram, revenue, cost, revenue-cost, '']); } for(const e of state.expenses){ rows.push(['Expense', new Date(e.dateISO).toISOString(), e.desc, '', '', '', '', '', e.amount]); } const csv = rows.map(r=> r.map(c=> '"'+String(c).replace(/"/g,'""')+'"').join(',')).join('
-'); const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='gold-pos-data.csv'; a.click(); URL.revokeObjectURL(url); showToast('CSV exported'); }
+      function exportCSV(){ 
+        let rows=[['Type','Date','Customer','GoldType','Grams','SalePricePerGram','CostPricePerGram','Revenue','Cost','Profit','Amount']]; 
+        for(const s of state.sales){ const revenue = s.grams*s.salePricePerGram; const cost=s.grams*s.costPricePerGram; rows.push(['Sale', new Date(s.dateISO).toISOString(), s.customerName || '', s.goldType || '', s.grams, s.salePricePerGram, s.costPricePerGram, revenue, cost, revenue-cost, '']); } 
+        for(const e of state.expenses){ rows.push(['Expense', new Date(e.dateISO).toISOString(), '', '', '', '', '', '', '', '', e.amount]); } 
+        const csv = rows.map(r=> r.map(c=> '"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n'); 
+        const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); 
+        const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='gold-pos-data.csv'; a.click(); URL.revokeObjectURL(url); showToast('CSV exported'); 
+      }
+      $('exportBtn').addEventListener('click', exportCSV);
+      
+      $('downloadJSON').addEventListener('click', ()=>{ const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='gold-pos-data.json'; a.click(); URL.revokeObjectURL(url); showToast('Backup downloaded'); });
 
-      // Backup (JSON)
-      bindTap($('downloadJSON'), ()=>{ const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='gold-pos-data.json'; a.click(); URL.revokeObjectURL(url); showToast('Backup downloaded'); });
-
-      // Import (JSON)
       const fileInput = $('fileInput');
-      if($('importJSONBtn') && fileInput){ bindTap($('importJSONBtn'), ()=> fileInput.click()); fileInput.addEventListener('change', (ev)=>{ const f=ev.target.files&&ev.target.files[0]; if(!f) return; const reader=new FileReader(); reader.onload = e=>{ try{ const parsed=JSON.parse(e.target.result); if(!confirm('Importing will replace current data. Continue?')) return; state = Object.assign(defaultState(), parsed); save(); renderAll(); showToast('Data imported'); }catch(err){ showToast('Invalid JSON file', true); } }; reader.readAsText(f); ev.target.value=''; }); }
+      $('importJSONBtn').addEventListener('click', ()=> fileInput.click()); 
+      fileInput.addEventListener('change', (ev)=>{ 
+        const f=ev.target.files&&ev.target.files[0]; 
+        if(!f) return; 
+        const reader=new FileReader(); 
+        reader.onload = e=>{ 
+          try{ 
+            const parsed=JSON.parse(e.target.result); 
+            showConfirm('Importing will replace current data. Continue?', () => {
+                state = Object.assign(defaultState(), parsed); 
+                save(); 
+                renderAll(); 
+                showToast('Data imported'); 
+            });
+          }catch(err){ 
+            showToast('Invalid JSON file', true); 
+          } 
+        }; 
+        reader.readAsText(f); ev.target.value=''; 
+      });
 
-      // Clear
-      bindTap($('clearBtn'), ()=>{ if(!confirm('This will delete all stored data in this browser. Continue?')) return; try{ localStorage.removeItem(STORAGE_KEY); state = defaultState(); save(); location.reload(); }catch(e){ showToast('Failed to clear storage', true); } });
+      $('clearBtn').addEventListener('click', ()=>{
+        showConfirm('This will delete all stored data in this browser. Are you sure?', () => {
+             try{ 
+                localStorage.removeItem(STORAGE_KEY); 
+                state = defaultState(); 
+                save(); 
+                location.reload(); 
+            } catch(e){ 
+                showToast('Failed to clear storage', true); 
+            }
+        });
+      });
 
-      // Render functions - always show all sales (filter removed)
-      function renderSales(){ const wrap = $('salesTableWrap'); if(!wrap) return; const sales = state.sales.slice().sort((a,b)=> new Date(b.dateISO)-new Date(a.dateISO)); if(sales.length===0){ wrap.innerHTML='<div class="muted">No sales recorded yet.</div>'; return; } let html='<table><thead><tr><th>Date</th><th>Grams</th><th>Price/gram</th><th>Revenue</th><th>Cost</th><th>Profit</th><th></th></tr></thead><tbody>'; for(const s of sales){ const revenue=s.grams*s.pricePerGram; const cost=s.grams*(state.costPerGram||0); html+=`<tr><td style="white-space:nowrap">${new Date(s.dateISO).toLocaleString()}</td><td>${s.grams}</td><td>${formatCurrency(s.pricePerGram)}</td><td>${formatCurrency(revenue)}</td><td>${formatCurrency(cost)}</td><td>${formatCurrency(revenue-cost)}</td><td><button data-id="${s.id}" class="delSale secondary">Del</button></td></tr>`; } html+='</tbody></table>'; wrap.innerHTML=html; wrap.querySelectorAll('.delSale').forEach(btn=> bindTap(btn, (e)=>{ const id = e.currentTarget.getAttribute('data-id'); if(!confirm('Delete this sale?')) return; state.sales = state.sales.filter(x=>x.id!==id); save(); renderAll(); showToast('Sale deleted'); })); }
+      function renderSales(){ 
+        const wrap = $('salesTableWrap'); 
+        if(!wrap) return; 
+        const sales = state.sales.slice().sort((a,b)=> new Date(b.dateISO)-new Date(a.dateISO)); 
+        if(sales.length===0){ wrap.innerHTML='<div class="muted" style="padding:10px;">No sales recorded yet.</div>'; return; } 
+        let html='<table><thead><tr><th>Date & Time</th><th>Customer</th><th>Type</th><th>Grams</th><th>Sale Price</th><th>Cost Price</th><th>Profit</th><th></th></tr></thead><tbody>'; 
+        for(const s of sales){ const revenue=s.grams*s.salePricePerGram; const cost=s.grams*s.costPricePerGram; html+=`<tr><td style="white-space:nowrap">${new Date(s.dateISO).toLocaleString()}</td><td>${s.customerName || '—'}</td><td>${s.goldType || '—'}</td><td>${s.grams.toFixed(2)}</td><td>${formatCurrency(s.salePricePerGram)}</td><td>${formatCurrency(s.costPricePerGram)}</td><td>${formatCurrency(revenue-cost)}</td><td><button data-id="${s.id}" class="delSale secondary">Del</button></td></tr>`; } 
+        html+='</tbody></table>'; 
+        wrap.innerHTML=html; 
+        wrap.querySelectorAll('.delSale').forEach(btn=> btn.addEventListener('click', (e)=>{ 
+            const id = e.currentTarget.getAttribute('data-id'); 
+            showConfirm('Delete this sale?', () => {
+                state.sales = state.sales.filter(x=>x.id!==id); 
+                save(); 
+                renderAll(); 
+                showToast('Sale deleted'); 
+            });
+        })); 
+      }
 
-      function renderExpenses(){ const el=$('expensesList'); if(!el) return; if(state.expenses.length===0){ el.innerHTML='<div class="muted">No expenses</div>'; return; } const items=state.expenses.slice().sort((a,b)=> new Date(b.dateISO)-new Date(a.dateISO)); el.innerHTML = items.map(i=> `<div style="padding:8px;border-bottom:1px dashed rgba(16,24,36,0.04)"><div style="font-weight:600">${i.desc}</div><div class="small muted">${new Date(i.dateISO).toLocaleDateString()} • ${formatCurrency(i.amount)}</div></div>`).join(''); }
+      function renderExpenses(){ 
+        const el=$('expensesList'); if(!el) return; 
+        if(state.expenses.length===0){ el.innerHTML='No expenses yet.'; return; } 
+        const items=state.expenses.slice().sort((a,b)=> new Date(b.dateISO)-new Date(a.dateISO)); 
+        el.innerHTML = items.map(i=> `<div style="padding:8px;border-bottom:1px dashed rgba(16,24,36,0.04)"><div style="display:flex;justify-content:space-between;"><span style="font-weight:600">${i.desc}</span> <span>${formatCurrency(i.amount)}</span></div><div class="small muted">${new Date(i.dateISO).toLocaleDateString()}</div></div>`).join(''); 
+      }
 
-      function computeSummary(){ const turnover = state.sales.reduce((s,x)=> s + x.grams*x.pricePerGram,0); const totalCost = state.sales.reduce((s,x)=> s + x.grams*(state.costPerGram||0),0); const grossProfit = turnover - totalCost; const totalExpenses = state.expenses.reduce((s,x)=> s + x.amount,0); const netProfit = grossProfit - totalExpenses; return {turnover,totalCost,grossProfit,totalExpenses,netProfit}; }
+      function computeSummary(){ 
+        const turnover = state.sales.reduce((s,x)=> s + x.grams*x.salePricePerGram,0); 
+        const totalCost = state.sales.reduce((s,x)=> s + x.grams*x.costPricePerGram,0); 
+        const grossProfit = turnover - totalCost; 
+        const totalExpenses = state.expenses.reduce((s,x)=> s + x.amount,0); 
+        const netProfit = grossProfit - totalExpenses; 
+        return {turnover,totalCost,grossProfit,totalExpenses,netProfit}; 
+      }
 
-      function renderSummary(){ const s = computeSummary(); if($('turnover')) $('turnover').textContent = formatCurrency(s.turnover); if($('totalCost')) $('totalCost').textContent = formatCurrency(s.totalCost); if($('grossProfit')) $('grossProfit').textContent = formatCurrency(s.grossProfit); if($('totalExpenses')) $('totalExpenses').textContent = formatCurrency(s.totalExpenses); if($('netProfit')) $('netProfit').textContent = formatCurrency(s.netProfit); renderChart(); }
+      function renderSummary(){ 
+        const s = computeSummary(); 
+        $('turnover').textContent = formatCurrency(s.turnover); 
+        $('totalCost').textContent = formatCurrency(s.totalCost); 
+        $('grossProfit').textContent = formatCurrency(s.grossProfit); 
+        $('totalExpenses').textContent = formatCurrency(s.totalExpenses); 
+        $('netProfit').textContent = formatCurrency(s.netProfit); 
+        renderChart(); 
+      }
 
-      // chart
-      function renderChart(){ const canvas=$('turnoverChart'); if(!canvas) return; const ctx=canvas.getContext('2d'); const DPR=window.devicePixelRatio||1; canvas.width = canvas.clientWidth*DPR; canvas.height = canvas.clientHeight*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); ctx.clearRect(0,0,canvas.width,canvas.height); const sales = state.sales.slice().sort((a,b)=> new Date(a.dateISO)-new Date(b.dateISO)); if(sales.length===0) return; let cum=0; const points = sales.map(s=>{ cum += s.grams*s.pricePerGram; return {t:new Date(s.dateISO), v:cum}; }); const w=canvas.clientWidth; const h=canvas.clientHeight; const maxV = points[points.length-1].v || 1; ctx.beginPath(); ctx.moveTo(0,h-10); ctx.lineTo(w,h-10); ctx.strokeStyle='rgba(16,24,36,0.06)'; ctx.stroke(); ctx.beginPath(); points.forEach((p,i)=>{ const x = (i/(points.length-1))*(w-10)+5; const y = h-12 - ((p.v)/(maxV || 1))*(h-24); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }); ctx.lineWidth=2; ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--accent-strong')||'#b8860b'; ctx.stroke(); }
+      function renderChart(){ 
+        const canvas=$('turnoverChartCanvas'); if(!canvas) return; 
+        const ctx=canvas.getContext('2d');
+        const sales = state.sales.slice().sort((a,b)=> new Date(a.dateISO)-new Date(b.dateISO)); 
+        
+        if (turnoverChartInstance) {
+            turnoverChartInstance.destroy();
+        }
+
+        if(sales.length===0) return; 
+
+        let cum=0; 
+        const chartData = sales.map(s=>{ cum += s.grams*s.salePricePerGram; return {t:new Date(s.dateISO), v:cum}; }); 
+        
+        turnoverChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartData.map(d => d.t.toLocaleDateString()),
+                datasets: [{
+                    label: 'Cumulative Turnover',
+                    data: chartData.map(d => d.v),
+                    borderColor: 'var(--accent-strong)',
+                    backgroundColor: 'var(--glass)',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { 
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '₦' + (value/1000) + 'k';
+                            },
+                            font: { size: 10 }
+                        }
+                    },
+                    x: {
+                        ticks: {
+                           display: false
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `Turnover: ${formatCurrency(context.parsed.y)}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+      }
 
       function renderAll(){ renderSales(); renderExpenses(); renderSummary(); }
       renderAll();
 
-      // keep salePrice synced when default sell changes
-      if($('sellPerGram')) $('sellPerGram').addEventListener('input', (e)=>{ if($('salePrice')) $('salePrice').value = e.target.value; });
+      $('defaultSellPerGram').addEventListener('input', (e)=>{ if($('salePrice')) $('salePrice').value = e.target.value; });
+      $('defaultCostPerGram').addEventListener('input', (e)=>{ if($('costPrice')) $('costPrice').value = e.target.value; });
     });
   </script>
 </body>
