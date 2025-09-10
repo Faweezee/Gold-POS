@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Gold POS — Sales & Finance Tracker (Light)</title>
+  <style>
+    :root{
+      --bg: #f6f5f3;
+      --card: #ffffff;
+      --accent: #d4af37; /* gold */
+      --accent-strong: #b8860b;
+      --muted: #6b6f76;
+      --border: rgba(16,24,36,0.08);
+      --glass: rgba(212,175,55,0.06);
+      --text: #0f1724;
+      --success: #1f6e3f;
+      --danger: #7b1f1f;
+      --shadow: 0 8px 30px rgba(16,24,36,0.06);
+      --radius: 12px;
+      --gap: 14px;
+    }
+
+    /* Typography */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+    *{box-sizing:border-box;font-family:Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial}
+
+    html,body{height:100%;}
+    body{margin:0;background:linear-gradient(180deg,var(--bg) 0%, #ffffff 100%);color:var(--text);padding:28px}
+
+    .container{max-width:1180px;margin:0 auto}
+
+    header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:20px}
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{width:56px;height:56px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-strong));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px;box-shadow:var(--shadow)}
+    h1{font-size:18px;margin:0}
+    .controls{display:flex;gap:10px;align-items:center}
+
+    /* Inputs / Buttons */
+    input,select,button,textarea{background:var(--card);border:1px solid var(--border);padding:10px 12px;border-radius:10px;color:var(--text);font-size:14px}
+    input:focus,select:focus,textarea:focus{outline:none;box-shadow:0 0 0 4px rgba(212,175,55,0.08);border-color:var(--accent-strong)}
+    button{cursor:pointer;background:linear-gradient(180deg,var(--accent),var(--accent-strong));color:#fff;border:none;padding:9px 12px;border-radius:10px;font-weight:600}
+    button.secondary{background:transparent;color:var(--text);border:1px solid var(--border);font-weight:600}
+    button.ghost{background:transparent;border:1px dashed rgba(16,24,36,0.06)}
+    button:disabled{opacity:0.6;cursor:not-allowed}
+
+    .grid{display:grid;grid-template-columns:1fr 360px;gap:var(--gap)}
+    .card{background:var(--card);padding:16px;border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow)}
+
+    .card h3{margin:0 0 10px 0;font-size:15px}
+    .form-row{display:flex;gap:10px;margin-bottom:12px;align-items:end}
+    label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
+
+    table{width:100%;border-collapse:collapse}
+    thead th{font-size:12px;color:var(--muted);text-align:left;padding:10px;border-bottom:1px solid rgba(16,24,36,0.04)}
+    tbody td{padding:10px;border-bottom:1px solid rgba(16,24,36,0.03);font-size:13px}
+    tbody tr:nth-child(even){background:linear-gradient(90deg, rgba(212,175,55,0.01), transparent)}
+
+    .muted{color:var(--muted);font-size:13px}
+    .summary{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+    .summary .item{padding:12px;border-radius:10px;background:linear-gradient(180deg, rgba(212,175,55,0.03), rgba(212,175,55,0.01));text-align:center;border:1px solid rgba(212,175,55,0.06)}
+    .small{font-size:12px}
+    .table-wrap{max-height:360px;overflow:auto;border-radius:8px}
+    .actions{display:flex;gap:8px}
+    .chip{padding:6px 12px;border-radius:999px;background:rgba(16,24,36,0.03);font-size:12px}
+
+    /* footer */
+    footer{margin-top:16px;color:var(--muted);font-size:13px}
+
+    /* responsive */
+    @media (max-width:1000px){
+      .grid{grid-template-columns:1fr}
+      .summary{grid-template-columns:repeat(2,1fr)}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <div class="logo">Au</div>
+        <div>
+          <h1>Gold POS</h1>
+          <div class="muted small">Sales & finance tracker — light theme</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="chip">Local storage</div>
+        <button id="exportBtn" title="Export CSV">Export</button>
+        <button id="downloadJSON" class="secondary" title="Download JSON backup">Backup</button>
+        <button id="importJSONBtn" class="ghost" title="Import JSON backup">Import</button>
+        <button id="clearBtn" class="secondary" title="Clear all data">Clear</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <main>
+        <div class="card">
+          <h3>Business settings</h3>
+          <div class="form-row">
+            <div style="flex:1">
+              <label for="businessName">Business name</label>
+              <input id="businessName" placeholder="e.g. ABC Gold Shop" />
+            </div>
+            <div style="width:160px">
+              <label for="costPerGram">Cost (₦) / gram</label>
+              <input id="costPerGram" type="number" step="0.01" />
+            </div>
+            <div style="width:160px">
+              <label for="sellPerGram">Default sell (₦) / gram</label>
+              <input id="sellPerGram" type="number" step="0.01" />
+            </div>
+            <div style="width:100px;display:flex;align-items:end">
+              <button id="saveSettings">Save</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h3>Record a sale</h3>
+          <div class="form-row">
+            <div style="flex:1">
+              <label for="saleGrams">Grams sold</label>
+              <input id="saleGrams" type="number" step="0.01" placeholder="e.g. 2.34" />
+            </div>
+            <div style="width:160px">
+              <label for="salePrice">Price (₦) / gram</label>
+              <input id="salePrice" type="number" step="0.01" />
+            </div>
+            <div style="width:180px">
+              <label for="saleDate">Date & time</label>
+              <input id="saleDate" type="datetime-local" />
+            </div>
+            <div style="width:120px;display:flex;align-items:end">
+              <button id="addSale">Add sale</button>
+            </div>
+          </div>
+          <div class="muted small">Tip: set default sell price above. Cost is used from settings to compute profit.</div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h3>Record expense</h3>
+          <div class="form-row">
+            <div style="flex:1">
+              <label for="expenseDesc">Description</label>
+              <input id="expenseDesc" placeholder="e.g. Shop rent" />
+            </div>
+            <div style="width:160px">
+              <label for="expenseAmount">Amount (₦)</label>
+              <input id="expenseAmount" type="number" step="0.01" />
+            </div>
+            <div style="width:160px">
+              <label for="expenseDate">Date</label>
+              <input id="expenseDate" type="date" />
+            </div>
+            <div style="width:120px;display:flex;align-items:end">
+              <button id="addExpense">Add</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h3>Sales</h3>
+          <div class="form-row">
+            <div style="flex:1">
+              <label for="filterFrom">Filter from</label>
+              <input id="filterFrom" type="date" />
+            </div>
+            <div style="flex:1">
+              <label for="filterTo">Filter to</label>
+              <input id="filterTo" type="date" />
+            </div>
+            <div style="width:120px;display:flex;align-items:end">
+              <button id="applyFilter">Apply</button>
+            </div>
+          </div>
+          <div class="table-wrap" id="salesTableWrap"></div>
+        </div>
+
+      </main>
+
+      <aside>
+        <div class="card">
+          <h3>Summary</h3>
+          <div class="summary" id="summaryGrid">
+            <div class="item"><div class="small muted">Turnover</div><div id="turnover" style="font-weight:700;font-size:18px">₦0</div></div>
+            <div class="item"><div class="small muted">Total Cost</div><div id="totalCost" style="font-weight:700;font-size:18px">₦0</div></div>
+            <div class="item"><div class="small muted">Gross Profit</div><div id="grossProfit" style="font-weight:700;font-size:18px">₦0</div></div>
+            <div class="item"><div class="small muted">Total Expenses</div><div id="totalExpenses" style="font-weight:700;font-size:18px">₦0</div></div>
+            <div class="item" style="grid-column:1 / -1"><div class="small muted">Net Profit</div><div id="netProfit" style="font-weight:700;font-size:20px">₦0</div></div>
+          </div>
+
+          <div style="margin-top:12px">
+            <canvas id="turnoverChart"></canvas>
+          </div>
+
+          <div style="margin-top:12px">
+            <h4>Expenses</h4>
+            <div id="expensesList" class="muted small" style="max-height:160px;overflow:auto"></div>
+          </div>
+
+          <div style="margin-top:12px">
+            <h4>Actions</h4>
+            <div class="actions">
+              <button id="exportSummary">Export summary CSV</button>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <footer>Instructions: set business settings, then record sales (grams × price). Cost per gram is used to compute cost and profit. Data is stored in your browser. Use Backup to download JSON.</footer>
+  </div>
+
+  <input id="fileInput" type="file" accept="application/json" style="display:none" />
+
+  <script>
+    // Simple single-file POS app using localStorage with polished UI
+    const STORAGE_KEY = 'gold-pos-data-v1';
+
+    function defaultState(){
+      return {
+        businessName: '',
+        costPerGram: 0,
+        sellPerGram: 0,
+        sales: [], // {id, grams, pricePerGram, dateISO}
+        expenses: [] // {id, desc, amount, dateISO}
+      }
+    }
+
+    // run everything after DOM ready to be sure elements exist
+    window.addEventListener('DOMContentLoaded', ()=>{
+      function load(){
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(!raw) return defaultState();
+        try{ const parsed = JSON.parse(raw); return Object.assign(defaultState(), parsed); }catch(e){return defaultState()}
+      }
+
+      function save(state){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+      function $(id){ return document.getElementById(id); }
+
+      let state = load();
+
+      // fill settings (leave empty if not set)
+      $('businessName').value = state.businessName || '';
+      $('costPerGram').value = state.costPerGram || '';
+      $('sellPerGram').value = state.sellPerGram || '';
+
+      function formatCurrency(n){ return '₦' + Number(n||0).toLocaleString(undefined,{maximumFractionDigits:2}); }
+      function uid(){ return Math.random().toString(36).slice(2,9); }
+
+      // set salePrice from default sell if present
+      if(state.sellPerGram) $('salePrice').value = state.sellPerGram;
+
+      // save settings
+      $('saveSettings').onclick = ()=>{
+        state.businessName = $('businessName').value || '';
+        state.costPerGram = parseFloat($('costPerGram').value) || 0;
+        state.sellPerGram = parseFloat($('sellPerGram').value) || 0;
+        save(state); showToast('Settings saved');
+        if(state.sellPerGram) $('salePrice').value = state.sellPerGram;
+        renderAll();
+      }
+
+      // add sale
+      const addSaleBtn = $('addSale');
+      function validateSaleInputs(){
+        const grams = parseFloat($('saleGrams').value);
+        return grams && grams > 0;
+      }
+      $('saleGrams').addEventListener('input', ()=> addSaleBtn.disabled = !validateSaleInputs());
+      addSaleBtn.disabled = !validateSaleInputs();
+
+      addSaleBtn.onclick = ()=>{
+        const grams = parseFloat($('saleGrams').value);
+        const price = parseFloat($('salePrice').value) || state.sellPerGram || 0;
+        const dt = $('saleDate').value ? new Date($('saleDate').value) : new Date();
+        if(!grams || grams <= 0){ showToast('Enter valid grams', true); return; }
+        const sale = { id: uid(), grams: Number(grams), pricePerGram: Number(price), dateISO: dt.toISOString() };
+        state.sales.push(sale);
+        save(state);
+        // clear form
+        $('saleGrams').value='';
+        $('saleDate').value='';
+        addSaleBtn.disabled = true;
+        renderAll();
+        showToast('Sale added');
+      }
+
+      // add expense
+      const addExpenseBtn = $('addExpense');
+      addExpenseBtn.onclick = ()=>{
+        const desc = $('expenseDesc').value || 'Expense';
+        const amount = parseFloat($('expenseAmount').value);
+        const dt = $('expenseDate').value ? new Date($('expenseDate').value) : new Date();
+        if(!amount || amount <= 0){ showToast('Enter valid amount', true); return; }
+        const exp = { id: uid(), desc, amount: Number(amount), dateISO: dt.toISOString() };
+        state.expenses.push(exp);
+        save(state);
+        $('expenseDesc').value=''; $('expenseAmount').value=''; $('expenseDate').value='';
+        renderAll();
+        showToast('Expense added');
+      }
+
+      // render sales table
+      function renderSales(filteredSales){
+        const wrap = $('salesTableWrap');
+        const sales = filteredSales || state.sales.slice().sort((a,b)=> new Date(b.dateISO)-new Date(a.dateISO));
+        if(sales.length===0){ wrap.innerHTML = '<div class="muted">No sales recorded yet.</div>'; return }
+        let html = '<table><thead><tr><th>Date</th><th>Grams</th><th>Price/gram</th><th>Revenue</th><th>Cost</th><th>Profit</th><th></th></tr></thead><tbody>';
+        for(const s of sales){
+          const revenue = s.grams * s.pricePerGram;
+          const cost = s.grams * (state.costPerGram || 0);
+          const profit = revenue - cost;
+          html += `<tr><td style="white-space:nowrap">${new Date(s.dateISO).toLocaleString()}</td><td>${s.grams}</td><td>${formatCurrency(s.pricePerGram)}</td><td>${formatCurrency(revenue)}</td><td>${formatCurrency(cost)}</td><td>${formatCurrency(profit)}</td><td><button data-id="${s.id}" class="delSale secondary">Del</button></td></tr>`;
+        }
+        html += '</tbody></table>';
+        wrap.innerHTML = html;
+        wrap.querySelectorAll('.delSale').forEach(btn=> btn.onclick = e=>{
+          const id = e.currentTarget.getAttribute('data-id');
+          if(!confirm('Delete this sale?')) return;
+          state.sales = state.sales.filter(x=>x.id!==id);
+          save(state); renderAll(); showToast('Sale deleted');
+        });
+      }
+
+      function renderExpenses(){
+        const el = $('expensesList');
+        if(state.expenses.length===0){ el.innerHTML = '<div class="muted">No expenses</div>'; return }
+        const items = state.expenses.slice().sort((a,b)=> new Date(b.dateISO)-new Date(a.dateISO));
+        el.innerHTML = items.map(i=> `<div style="padding:8px;border-bottom:1px dashed rgba(16,24,36,0.04)"><div style="font-weight:600">${i.desc}</div><div class="small muted">${new Date(i.dateISO).toLocaleDateString()} • ${formatCurrency(i.amount)}</div></div>`).join('');
+      }
+
+      function computeSummary(filteredSales, filteredExpenses){
+        const sales = filteredSales || state.sales;
+        const expenses = filteredExpenses || state.expenses;
+        const turnover = sales.reduce((s,x)=> s + x.grams * x.pricePerGram,0);
+        const totalCost = sales.reduce((s,x)=> s + x.grams * (state.costPerGram || 0),0);
+        const grossProfit = turnover - totalCost;
+        const totalExpenses = expenses.reduce((s,x)=> s + x.amount,0);
+        const netProfit = grossProfit - totalExpenses;
+        return {turnover,totalCost,grossProfit,totalExpenses,netProfit};
+      }
+
+      function renderSummary(filteredSales, filteredExpenses){
+        const s = computeSummary(filteredSales, filteredExpenses);
+        $('turnover').textContent = formatCurrency(s.turnover);
+        $('totalCost').textContent = formatCurrency(s.totalCost);
+        $('grossProfit').textContent = formatCurrency(s.grossProfit);
+        $('totalExpenses').textContent = formatCurrency(s.totalExpenses);
+        $('netProfit').textContent = formatCurrency(s.netProfit);
+        renderChart(filteredSales || state.sales);
+      }
+
+      function parseFilterDates(){
+        const from = $('filterFrom').value ? new Date($('filterFrom').value + 'T00:00:00') : null;
+        const to = $('filterTo').value ? new Date($('filterTo').value + 'T23:59:59') : null;
+        return {from,to};
+      }
+
+      $('applyFilter').onclick = ()=>{
+        const {from,to} = parseFilterDates();
+        const fs = state.sales.filter(s=>{
+          const d = new Date(s.dateISO);
+          if(from && d < from) return false;
+          if(to && d > to) return false;
+          return true;
+        });
+        const fe = state.expenses.filter(e=>{
+          const d = new Date(e.dateISO);
+          if(from && d < from) return false;
+          if(to && d > to) return false;
+          return true;
+        });
+        renderSales(fs);
+        renderExpenses();
+        renderSummary(fs, fe);
+      }
+
+      // chart: simple cumulative turnover over time (gold line)
+      function renderChart(sales){
+        const canvas = document.getElementById('turnoverChart');
+        const ctx = canvas.getContext('2d');
+        const DPR = window.devicePixelRatio || 1;
+        canvas.width = canvas.clientWidth * DPR; canvas.height = canvas.clientHeight * DPR;
+        ctx.setTransform(DPR,0,0,DPR,0,0);
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        if(!sales || sales.length===0) return;
+        const items = sales.slice().sort((a,b)=> new Date(a.dateISO)-new Date(b.dateISO));
+        const points = [];
+        let cum = 0;
+        for(const s of items){ cum += s.grams * s.pricePerGram; points.push({t:new Date(s.dateISO),v:cum}); }
+        const w = canvas.clientWidth; const h = canvas.clientHeight;
+        const minV = 0; const maxV = points[points.length-1].v || 1;
+        ctx.beginPath(); ctx.moveTo(0,h-10); ctx.lineTo(w,h-10); ctx.strokeStyle='rgba(16,24,36,0.06)'; ctx.stroke();
+        ctx.beginPath();
+        points.forEach((p,i)=>{
+          const x = (i/(points.length-1)) * (w-10) + 5;
+          const y = h - 12 - ((p.v - minV)/(maxV - minV || 1)) * (h-24);
+          if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        });
+        ctx.lineWidth = 2; ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-strong') || '#b8860b'; ctx.stroke();
+      }
+
+      // export CSV of all sales + expenses
+      function exportCSV(){
+        let rows = [];
+        rows.push(['Type','Date','Item','Grams','UnitPrice','Revenue','Cost','Profit','Amount']);
+        for(const s of state.sales){
+          const revenue = s.grams * s.pricePerGram;
+          const cost = s.grams * (state.costPerGram||0);
+          const profit = revenue - cost;
+          rows.push(['Sale', new Date(s.dateISO).toISOString(), state.businessName || '', s.grams, s.pricePerGram, revenue, cost, profit, '']);
+        }
+        for(const e of state.expenses){ rows.push(['Expense', new Date(e.dateISO).toISOString(), e.desc, '', '', '', '', '', e.amount]); }
+        const csv = rows.map(r=> r.map(c=> '"'+String(c).replace(/"/g,'""')+'"').join(',')).join('
+');
+        const blob = new Blob([csv],{type:'text/csv'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'gold-pos-data.csv'; a.click(); URL.revokeObjectURL(url);
+      }
+
+      // wire buttons (safe because DOMContentLoaded)
+      $('exportBtn').onclick = exportCSV;
+      $('exportSummary').onclick = exportCSV;
+
+      $('downloadJSON').onclick = ()=>{
+        const blob = new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'gold-pos-data.json'; a.click(); URL.revokeObjectURL(url);
+      }
+
+      // import JSON
+      $('importJSONBtn').onclick = ()=>{ $('fileInput').click(); };
+      $('fileInput').addEventListener('change', (ev)=>{
+        const f = ev.target.files && ev.target.files[0]; if(!f) return;
+        const reader = new FileReader();
+        reader.onload = e=>{
+          try{
+            const parsed = JSON.parse(e.target.result);
+            if(!confirm('Importing will replace current data. Continue?')) return;
+            state = Object.assign(defaultState(), parsed);
+            save(state); renderAll(); showToast('Data imported');
+          }catch(err){ showToast('Invalid JSON file', true); }
+        };
+        reader.readAsText(f);
+        ev.target.value = '';
+      });
+
+      $('clearBtn').onclick = ()=>{
+        if(!confirm('This will delete all stored data in this browser. Continue?')) return;
+        localStorage.removeItem(STORAGE_KEY); state = defaultState(); save(state); location.reload();
+      }
+
+      // render everything
+      function renderAll(){
+        renderSales(); renderExpenses(); renderSummary();
+      }
+
+      renderAll();
+
+      // update salePrice when default sell changes
+      $('sellPerGram').addEventListener('input', e=> $('salePrice').value = e.target.value);
+
+      // small toast for feedback
+      function showToast(msg, isError=false){
+        const t = document.createElement('div');
+        t.textContent = msg; t.style.position='fixed'; t.style.right='20px'; t.style.bottom='20px'; t.style.padding='12px 16px';
+        t.style.borderRadius='10px'; t.style.boxShadow='0 6px 20px rgba(16,24,36,0.12)'; t.style.fontWeight=600;
+        t.style.background = isError ? 'rgba(123,31,31,0.95)' : 'linear-gradient(90deg,var(--accent),var(--accent-strong))';
+        t.style.color = '#fff'; t.style.zIndex = 9999; document.body.appendChild(t);
+        setTimeout(()=>{ t.style.transition='opacity 300ms'; t.style.opacity=0; setTimeout(()=>t.remove(),300); }, 2200);
+      }
+
+    });
+  </script>
+</body>
+</html>
