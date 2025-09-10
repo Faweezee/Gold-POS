@@ -21,22 +21,17 @@
       --gap: 14px;
     }
 
-    /* Typography */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
     *{box-sizing:border-box;font-family:Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial}
-
     html,body{height:100%;}
-    body{margin:0;background:linear-gradient(180deg,var(--bg) 0%, #ffffff 100%);color:var(--text);padding:28px}
-
+    body{margin:0;background:linear-gradient(180deg,var(--bg) 0%, #ffffff 100%);color:var(--text);padding:20px}
     .container{max-width:1180px;margin:0 auto}
-
-    header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:20px}
+    header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:16px}
     .brand{display:flex;gap:12px;align-items:center}
     .logo{width:56px;height:56px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-strong));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px;box-shadow:var(--shadow)}
     h1{font-size:18px;margin:0}
     .controls{display:flex;gap:10px;align-items:center}
 
-    /* Inputs / Buttons */
     input,select,button,textarea{background:var(--card);border:1px solid var(--border);padding:10px 12px;border-radius:10px;color:var(--text);font-size:14px}
     input:focus,select:focus,textarea:focus{outline:none;box-shadow:0 0 0 4px rgba(212,175,55,0.08);border-color:var(--accent-strong)}
     button{cursor:pointer;background:linear-gradient(180deg,var(--accent),var(--accent-strong));color:#fff;border:none;padding:9px 12px;border-radius:10px;font-weight:600}
@@ -46,16 +41,13 @@
 
     .grid{display:grid;grid-template-columns:1fr 360px;gap:var(--gap)}
     .card{background:var(--card);padding:16px;border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow)}
-
     .card h3{margin:0 0 10px 0;font-size:15px}
     .form-row{display:flex;gap:10px;margin-bottom:12px;align-items:end}
     label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
-
     table{width:100%;border-collapse:collapse}
     thead th{font-size:12px;color:var(--muted);text-align:left;padding:10px;border-bottom:1px solid rgba(16,24,36,0.04)}
     tbody td{padding:10px;border-bottom:1px solid rgba(16,24,36,0.03);font-size:13px}
     tbody tr:nth-child(even){background:linear-gradient(90deg, rgba(212,175,55,0.01), transparent)}
-
     .muted{color:var(--muted);font-size:13px}
     .summary{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
     .summary .item{padding:12px;border-radius:10px;background:linear-gradient(180deg, rgba(212,175,55,0.03), rgba(212,175,55,0.01));text-align:center;border:1px solid rgba(212,175,55,0.06)}
@@ -64,57 +56,10 @@
     .actions{display:flex;gap:8px}
     .chip{padding:6px 12px;border-radius:999px;background:rgba(16,24,36,0.03);font-size:12px}
 
-    /* footer */
-    footer{margin-top:16px;color:var(--muted);font-size:13px}
-
-    /* mobile improvements */
-    @media (max-width:1000px){
-      .grid{grid-template-columns:1fr}
-      .summary{grid-template-columns:repeat(2,1fr)}
-    }
-
-    @media (max-width:700px){
-      body{padding:14px}
-      header{flex-direction:column;align-items:flex-start;gap:10px}
-      .logo{width:48px;height:48px;font-size:16px}
-      .controls{width:100%;display:flex;flex-wrap:wrap;gap:8px}
-      .controls .chip{display:none}
-
-      /* make form rows stack vertically for easy tapping */
-      .form-row{flex-direction:column;align-items:stretch}
-      .form-row > div{width:100% !important}
-      .form-row [style*="width:"]{width:100% !important}
-
-      /* buttons more tappable and full width where appropriate */
-      #addSale, #addExpense, #saveSettings, #applyFilter{width:100%;}
-      .controls button{flex:1;min-width:36%;padding:10px}
-
-      /* summary becomes single column to avoid cramped layout */
-      .summary{grid-template-columns:1fr}
-      .table-wrap{max-height:260px}
-      tbody td{font-size:14px}
-      canvas{height:120px}
-
-      /* smaller paddings to fit narrow screens */
-      .card{padding:12px}
-      .container{padding:0 6px}
-    }
-
-    /* very small phones */
-    @media (max-width:420px){
-      .logo{width:40px;height:40px}
-      h1{font-size:16px}
-      input,button{font-size:14px;padding:10px}
-      thead th{font-size:11px}
-      tbody td{padding:8px}
-    }
-
-    /* horizontal table scroll on tiny widths */
-    @media (max-width:520px){
-      .table-wrap{overflow:auto}
-      table{min-width:680px}
-    }
-
+    @media (max-width:1000px){ .grid{grid-template-columns:1fr} .summary{grid-template-columns:repeat(2,1fr)} }
+    @media (max-width:700px){ body{padding:12px} header{flex-direction:column;align-items:flex-start} .controls{width:100%;display:flex;flex-wrap:wrap} .controls .chip{display:none} .form-row{flex-direction:column;align-items:stretch} .form-row > div{width:100% !important} .form-row [style*="width:"]{width:100% !important} #addSale,#addExpense,#saveSettings{width:100%;} .summary{grid-template-columns:1fr} .table-wrap{max-height:260px} canvas{height:120px} .card{padding:12px} .container{padding:0 6px} }
+    @media (max-width:420px){ .logo{width:40px;height:40px} h1{font-size:16px} input,button{font-size:14px;padding:10px} thead th{font-size:11px} tbody td{padding:8px} }
+    @media (max-width:520px){ .table-wrap{overflow:auto} table{min-width:680px} }
   </style>
 </head>
 <body>
@@ -205,19 +150,6 @@
 
         <div class="card" style="margin-top:12px">
           <h3>Sales</h3>
-          <div class="form-row">
-            <div style="flex:1">
-              <label for="filterFrom">Filter from</label>
-              <input id="filterFrom" type="date" />
-            </div>
-            <div style="flex:1">
-              <label for="filterTo">Filter to</label>
-              <input id="filterTo" type="date" />
-            </div>
-            <div style="width:120px;display:flex;align-items:end">
-              <button id="applyFilter">Apply</button>
-            </div>
-          </div>
           <div class="table-wrap" id="salesTableWrap"></div>
         </div>
 
@@ -253,281 +185,118 @@
       </aside>
     </div>
 
-    <footer>Instructions: set business settings, then record sales (grams × price). Cost per gram is used to compute cost and profit. Data is stored in your browser. Use Backup to download JSON.</footer>
+    <footer>Data is stored locally in your browser under the key <code>gold-pos-data-v1</code>. Use Backup to download JSON.</footer>
   </div>
 
   <input id="fileInput" type="file" accept="application/json" style="display:none" />
 
   <script>
-    // Simple single-file POS app using localStorage with robust event binding
+    // Single-file POS: robust tap/click handlers + removed filter (always show all sales)
     const STORAGE_KEY = 'gold-pos-data-v1';
 
     function defaultState(){
-      return {
-        businessName: '',
-        costPerGram: 0,
-        sellPerGram: 0,
-        sales: [], // {id, grams, pricePerGram, dateISO}
-        expenses: [] // {id, desc, amount, dateISO}
-      }
+      return { businessName: '', costPerGram: 0, sellPerGram: 0, sales: [], expenses: [] };
     }
 
-    // helper to safely get element
     function $(id){ return document.getElementById(id); }
 
-    // run everything after DOM ready to be sure elements exist
-    window.addEventListener('DOMContentLoaded', ()=>{
-      function load(){
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if(!raw) return defaultState();
-        try{ const parsed = JSON.parse(raw); return Object.assign(defaultState(), parsed); }catch(e){console.warn('Failed parsing storage, resetting'); return defaultState();}
-      }
+    // helper: bind both click and pointerup/touchstart safely to work on Android and desktop
+    function bindTap(el, handler){
+      if(!el) return;
+      let locked = false;
+      const run = (e)=>{ if(locked) return; locked = true; try{ handler(e); }finally{ setTimeout(()=>locked=false, 300); } };
+      el.addEventListener('click', run);
+      el.addEventListener('pointerup', run);
+      el.addEventListener('touchend', run);
+    }
 
-      function save(state){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){ showToast('Failed to save data. Storage full?', true); }}
+    document.addEventListener('DOMContentLoaded', ()=>{
+      let state;
+      function load(){ const raw = localStorage.getItem(STORAGE_KEY); if(!raw) return defaultState(); try{ return Object.assign(defaultState(), JSON.parse(raw)); }catch(e){ console.warn('Bad storage JSON', e); return defaultState(); } }
+      function save(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){ showToast('Failed to save data. Storage may be full', true); } }
 
-      let state = load();
+      state = load();
 
-      // fill settings (leave empty if not set)
+      // populate fields
       if($('businessName')) $('businessName').value = state.businessName || '';
       if($('costPerGram')) $('costPerGram').value = state.costPerGram || '';
       if($('sellPerGram')) $('sellPerGram').value = state.sellPerGram || '';
-
-      function formatCurrency(n){ return '₦' + Number(n||0).toLocaleString(undefined,{maximumFractionDigits:2}); }
-      function uid(){ return Math.random().toString(36).slice(2,9); }
-
-      // set salePrice from default sell if present
       if(state.sellPerGram && $('salePrice')) $('salePrice').value = state.sellPerGram;
 
-      // small toast for feedback
-      function showToast(msg, isError=false){
-        const t = document.createElement('div');
-        t.textContent = msg; t.style.position='fixed'; t.style.right='20px'; t.style.bottom='20px'; t.style.padding='12px 16px';
-        t.style.borderRadius='10px'; t.style.boxShadow='0 6px 20px rgba(16,24,36,0.12)'; t.style.fontWeight=600;
-        t.style.background = isError ? 'rgba(123,31,31,0.95)' : 'linear-gradient(90deg,var(--accent),var(--accent-strong))';
-        t.style.color = '#fff'; t.style.zIndex = 9999; document.body.appendChild(t);
-        setTimeout(()=>{ t.style.transition='opacity 300ms'; t.style.opacity=0; setTimeout(()=>t.remove(),300); }, 2200);
-      }
+      function uid(){ return Math.random().toString(36).slice(2,9); }
+      function formatCurrency(n){ return '₦' + Number(n||0).toLocaleString(undefined,{maximumFractionDigits:2}); }
 
-      // --------- Event bindings (all guarded) ---------
-      const saveSettingsBtn = $('saveSettings');
-      if(saveSettingsBtn){
-        saveSettingsBtn.addEventListener('click', ()=>{
-          state.businessName = $('businessName').value || '';
-          state.costPerGram = parseFloat($('costPerGram').value) || 0;
-          state.sellPerGram = parseFloat($('sellPerGram').value) || 0;
-          save(state); showToast('Settings saved');
-          if(state.sellPerGram && $('salePrice')) $('salePrice').value = state.sellPerGram;
-          renderAll();
-        });
-      }
+      function showToast(msg, isError=false){ const t=document.createElement('div'); t.textContent=msg; t.style.position='fixed'; t.style.right='16px'; t.style.bottom='20px'; t.style.padding='12px 14px'; t.style.borderRadius='10px'; t.style.boxShadow='0 6px 20px rgba(16,24,36,0.12)'; t.style.fontWeight=600; t.style.background = isError ? 'rgba(123,31,31,0.95)' : 'linear-gradient(90deg,var(--accent),var(--accent-strong))'; t.style.color='#fff'; t.style.zIndex=9999; document.body.appendChild(t); setTimeout(()=>{ t.style.transition='opacity 300ms'; t.style.opacity=0; setTimeout(()=>t.remove(),300); }, 1800); }
 
-      // add sale
+      // Save settings
+      bindTap($('saveSettings'), ()=>{
+        state.businessName = $('businessName').value || '';
+        state.costPerGram = parseFloat($('costPerGram').value) || 0;
+        state.sellPerGram = parseFloat($('sellPerGram').value) || 0;
+        save();
+        if(state.sellPerGram && $('salePrice')) $('salePrice').value = state.sellPerGram;
+        renderAll();
+        showToast('Settings saved');
+      });
+
+      // Add sale
       const addSaleBtn = $('addSale');
-      function validateSaleInputs(){
-        const gramsInput = $('saleGrams'); if(!gramsInput) return false;
-        const grams = parseFloat(gramsInput.value);
-        return grams && grams > 0;
-      }
-      if($('saleGrams')) $('saleGrams').addEventListener('input', ()=>{ if(addSaleBtn) addSaleBtn.disabled = !validateSaleInputs(); });
-      if(addSaleBtn){ addSaleBtn.disabled = !validateSaleInputs(); addSaleBtn.addEventListener('click', ()=>{
+      function validSale(){ const g = $('saleGrams'); if(!g) return false; const val = parseFloat(g.value); return val && val > 0; }
+      if($('saleGrams')) $('saleGrams').addEventListener('input', ()=>{ if(addSaleBtn) addSaleBtn.disabled = !validSale(); });
+      if(addSaleBtn) { addSaleBtn.disabled = !validSale(); bindTap(addSaleBtn, ()=>{
         const grams = parseFloat($('saleGrams').value);
         const price = parseFloat($('salePrice').value) || state.sellPerGram || 0;
         const dt = $('saleDate').value ? new Date($('saleDate').value) : new Date();
         if(!grams || grams <= 0){ showToast('Enter valid grams', true); return; }
-        const sale = { id: uid(), grams: Number(grams), pricePerGram: Number(price), dateISO: dt.toISOString() };
-        state.sales.push(sale);
-        save(state);
-        // clear form
-        $('saleGrams').value='';
-        $('saleDate').value='';
-        addSaleBtn.disabled = true;
-        renderAll();
-        showToast('Sale added');
+        state.sales.push({ id: uid(), grams: Number(grams), pricePerGram: Number(price), dateISO: dt.toISOString() });
+        save();
+        $('saleGrams').value=''; $('saleDate').value=''; addSaleBtn.disabled=true; renderAll(); showToast('Sale added');
       }); }
 
-      // add expense
-      const addExpenseBtn = $('addExpense');
-      if(addExpenseBtn){ addExpenseBtn.addEventListener('click', ()=>{
+      // Add expense
+      bindTap($('addExpense'), ()=>{
         const desc = $('expenseDesc').value || 'Expense';
         const amount = parseFloat($('expenseAmount').value);
         const dt = $('expenseDate').value ? new Date($('expenseDate').value) : new Date();
         if(!amount || amount <= 0){ showToast('Enter valid amount', true); return; }
-        const exp = { id: uid(), desc, amount: Number(amount), dateISO: dt.toISOString() };
-        state.expenses.push(exp);
-        save(state);
-        $('expenseDesc').value=''; $('expenseAmount').value=''; $('expenseDate').value='';
-        renderAll();
-        showToast('Expense added');
-      }); }
-
-      // apply filter
-      const applyFilterBtn = $('applyFilter');
-      if(applyFilterBtn){ applyFilterBtn.addEventListener('click', ()=>{
-        const {from,to} = parseFilterDates();
-        const fs = state.sales.filter(s=>{
-          const d = new Date(s.dateISO);
-          if(from && d < from) return false;
-          if(to && d > to) return false;
-          return true;
-        });
-        const fe = state.expenses.filter(e=>{
-          const d = new Date(e.dateISO);
-          if(from && d < from) return false;
-          if(to && d > to) return false;
-          return true;
-        });
-        renderSales(fs);
-        renderExpenses();
-        renderSummary(fs, fe);
-      }); }
-
-      // export CSV
-      const exportBtn = $('exportBtn');
-      function exportCSV(){
-        let rows = [];
-        rows.push(['Type','Date','Item','Grams','UnitPrice','Revenue','Cost','Profit','Amount']);
-        for(const s of state.sales){
-          const revenue = s.grams * s.pricePerGram;
-          const cost = s.grams * (state.costPerGram||0);
-          const profit = revenue - cost;
-          rows.push(['Sale', new Date(s.dateISO).toISOString(), state.businessName || '', s.grams, s.pricePerGram, revenue, cost, profit, '']);
-        }
-        for(const e of state.expenses){ rows.push(['Expense', new Date(e.dateISO).toISOString(), e.desc, '', '', '', '', '', e.amount]); }
-        const csv = rows.map(r=> r.map(c=> '"'+String(c).replace(/"/g,'""')+'"').join(',')).join('
-');
-        const blob = new Blob([csv],{type:'text/csv'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = 'gold-pos-data.csv'; a.click(); URL.revokeObjectURL(url);
-        showToast('CSV exported');
-      }
-      if(exportBtn) exportBtn.addEventListener('click', exportCSV);
-      const exportSummaryBtn = $('exportSummary'); if(exportSummaryBtn) exportSummaryBtn.addEventListener('click', exportCSV);
-
-      // download JSON backup
-      const downloadJSONBtn = $('downloadJSON');
-      if(downloadJSONBtn) downloadJSONBtn.addEventListener('click', ()=>{
-        const blob = new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = 'gold-pos-data.json'; a.click(); URL.revokeObjectURL(url);
-        showToast('Backup downloaded');
+        state.expenses.push({ id: uid(), desc, amount: Number(amount), dateISO: dt.toISOString() });
+        save();
+        $('expenseDesc').value=''; $('expenseAmount').value=''; $('expenseDate').value=''; renderAll(); showToast('Expense added');
       });
 
-      // import JSON
-      const importBtn = $('importJSONBtn');
+      // Export CSV (sales + expenses)
+      bindTap($('exportBtn'), exportCSV);
+      bindTap($('exportSummary'), exportCSV);
+      function exportCSV(){ let rows=[['Type','Date','Item','Grams','UnitPrice','Revenue','Cost','Profit','Amount']]; for(const s of state.sales){ const revenue = s.grams*s.pricePerGram; const cost=s.grams*(state.costPerGram||0); rows.push(['Sale', new Date(s.dateISO).toISOString(), state.businessName||'', s.grams, s.pricePerGram, revenue, cost, revenue-cost, '']); } for(const e of state.expenses){ rows.push(['Expense', new Date(e.dateISO).toISOString(), e.desc, '', '', '', '', '', e.amount]); } const csv = rows.map(r=> r.map(c=> '"'+String(c).replace(/"/g,'""')+'"').join(',')).join('
+'); const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='gold-pos-data.csv'; a.click(); URL.revokeObjectURL(url); showToast('CSV exported'); }
+
+      // Backup (JSON)
+      bindTap($('downloadJSON'), ()=>{ const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='gold-pos-data.json'; a.click(); URL.revokeObjectURL(url); showToast('Backup downloaded'); });
+
+      // Import (JSON)
       const fileInput = $('fileInput');
-      if(importBtn && fileInput){
-        importBtn.addEventListener('click', ()=> fileInput.click());
-        fileInput.addEventListener('change', (ev)=>{
-          const f = ev.target.files && ev.target.files[0]; if(!f) return;
-          const reader = new FileReader();
-          reader.onload = e=>{
-            try{
-              const parsed = JSON.parse(e.target.result);
-              if(!confirm('Importing will replace current data. Continue?')) return;
-              state = Object.assign(defaultState(), parsed);
-              save(state); renderAll(); showToast('Data imported');
-            }catch(err){ showToast('Invalid JSON file', true); }
-          };
-          reader.readAsText(f);
-          ev.target.value = '';
-        });
-      }
+      if($('importJSONBtn') && fileInput){ bindTap($('importJSONBtn'), ()=> fileInput.click()); fileInput.addEventListener('change', (ev)=>{ const f=ev.target.files&&ev.target.files[0]; if(!f) return; const reader=new FileReader(); reader.onload = e=>{ try{ const parsed=JSON.parse(e.target.result); if(!confirm('Importing will replace current data. Continue?')) return; state = Object.assign(defaultState(), parsed); save(); renderAll(); showToast('Data imported'); }catch(err){ showToast('Invalid JSON file', true); } }; reader.readAsText(f); ev.target.value=''; }); }
 
-      // clear
-      const clearBtn = $('clearBtn'); if(clearBtn) clearBtn.addEventListener('click', ()=>{
-        if(!confirm('This will delete all stored data in this browser. Continue?')) return;
-        try{ localStorage.removeItem(STORAGE_KEY); state = defaultState(); save(state); location.reload(); }catch(e){ showToast('Failed to clear storage', true); }
-      });
+      // Clear
+      bindTap($('clearBtn'), ()=>{ if(!confirm('This will delete all stored data in this browser. Continue?')) return; try{ localStorage.removeItem(STORAGE_KEY); state = defaultState(); save(); location.reload(); }catch(e){ showToast('Failed to clear storage', true); } });
 
-      // --------- Rendering ---------
-      function renderSales(filteredSales){
-        const wrap = $('salesTableWrap');
-        const sales = filteredSales || state.sales.slice().sort((a,b)=> new Date(b.dateISO)-new Date(a.dateISO));
-        if(!wrap) return;
-        if(sales.length===0){ wrap.innerHTML = '<div class="muted">No sales recorded yet.</div>'; return }
-        let html = '<table><thead><tr><th>Date</th><th>Grams</th><th>Price/gram</th><th>Revenue</th><th>Cost</th><th>Profit</th><th></th></tr></thead><tbody>';
-        for(const s of sales){
-          const revenue = s.grams * s.pricePerGram;
-          const cost = s.grams * (state.costPerGram || 0);
-          const profit = revenue - cost;
-          html += `<tr><td style="white-space:nowrap">${new Date(s.dateISO).toLocaleString()}</td><td>${s.grams}</td><td>${formatCurrency(s.pricePerGram)}</td><td>${formatCurrency(revenue)}</td><td>${formatCurrency(cost)}</td><td>${formatCurrency(profit)}</td><td><button data-id="${s.id}" class="delSale secondary">Del</button></td></tr>`;
-        }
-        html += '</tbody></table>';
-        wrap.innerHTML = html;
-        wrap.querySelectorAll('.delSale').forEach(btn=> btn.addEventListener('click', e=>{
-          const id = e.currentTarget.getAttribute('data-id');
-          if(!confirm('Delete this sale?')) return;
-          state.sales = state.sales.filter(x=>x.id!==id);
-          save(state); renderAll(); showToast('Sale deleted');
-        }));
-      }
+      // Render functions - always show all sales (filter removed)
+      function renderSales(){ const wrap = $('salesTableWrap'); if(!wrap) return; const sales = state.sales.slice().sort((a,b)=> new Date(b.dateISO)-new Date(a.dateISO)); if(sales.length===0){ wrap.innerHTML='<div class="muted">No sales recorded yet.</div>'; return; } let html='<table><thead><tr><th>Date</th><th>Grams</th><th>Price/gram</th><th>Revenue</th><th>Cost</th><th>Profit</th><th></th></tr></thead><tbody>'; for(const s of sales){ const revenue=s.grams*s.pricePerGram; const cost=s.grams*(state.costPerGram||0); html+=`<tr><td style="white-space:nowrap">${new Date(s.dateISO).toLocaleString()}</td><td>${s.grams}</td><td>${formatCurrency(s.pricePerGram)}</td><td>${formatCurrency(revenue)}</td><td>${formatCurrency(cost)}</td><td>${formatCurrency(revenue-cost)}</td><td><button data-id="${s.id}" class="delSale secondary">Del</button></td></tr>`; } html+='</tbody></table>'; wrap.innerHTML=html; wrap.querySelectorAll('.delSale').forEach(btn=> bindTap(btn, (e)=>{ const id = e.currentTarget.getAttribute('data-id'); if(!confirm('Delete this sale?')) return; state.sales = state.sales.filter(x=>x.id!==id); save(); renderAll(); showToast('Sale deleted'); })); }
 
-      function renderExpenses(){
-        const el = $('expensesList'); if(!el) return;
-        if(state.expenses.length===0){ el.innerHTML = '<div class="muted">No expenses</div>'; return }
-        const items = state.expenses.slice().sort((a,b)=> new Date(b.dateISO)-new Date(a.dateISO));
-        el.innerHTML = items.map(i=> `<div style="padding:8px;border-bottom:1px dashed rgba(16,24,36,0.04)"><div style="font-weight:600">${i.desc}</div><div class="small muted">${new Date(i.dateISO).toLocaleDateString()} • ${formatCurrency(i.amount)}</div></div>`).join('');
-      }
+      function renderExpenses(){ const el=$('expensesList'); if(!el) return; if(state.expenses.length===0){ el.innerHTML='<div class="muted">No expenses</div>'; return; } const items=state.expenses.slice().sort((a,b)=> new Date(b.dateISO)-new Date(a.dateISO)); el.innerHTML = items.map(i=> `<div style="padding:8px;border-bottom:1px dashed rgba(16,24,36,0.04)"><div style="font-weight:600">${i.desc}</div><div class="small muted">${new Date(i.dateISO).toLocaleDateString()} • ${formatCurrency(i.amount)}</div></div>`).join(''); }
 
-      function computeSummary(filteredSales, filteredExpenses){
-        const sales = filteredSales || state.sales;
-        const expenses = filteredExpenses || state.expenses;
-        const turnover = sales.reduce((s,x)=> s + x.grams * x.pricePerGram,0);
-        const totalCost = sales.reduce((s,x)=> s + x.grams * (state.costPerGram || 0),0);
-        const grossProfit = turnover - totalCost;
-        const totalExpenses = expenses.reduce((s,x)=> s + x.amount,0);
-        const netProfit = grossProfit - totalExpenses;
-        return {turnover,totalCost,grossProfit,totalExpenses,netProfit};
-      }
+      function computeSummary(){ const turnover = state.sales.reduce((s,x)=> s + x.grams*x.pricePerGram,0); const totalCost = state.sales.reduce((s,x)=> s + x.grams*(state.costPerGram||0),0); const grossProfit = turnover - totalCost; const totalExpenses = state.expenses.reduce((s,x)=> s + x.amount,0); const netProfit = grossProfit - totalExpenses; return {turnover,totalCost,grossProfit,totalExpenses,netProfit}; }
 
-      function renderSummary(filteredSales, filteredExpenses){
-        const s = computeSummary(filteredSales, filteredExpenses);
-        if($('turnover')) $('turnover').textContent = formatCurrency(s.turnover);
-        if($('totalCost')) $('totalCost').textContent = formatCurrency(s.totalCost);
-        if($('grossProfit')) $('grossProfit').textContent = formatCurrency(s.grossProfit);
-        if($('totalExpenses')) $('totalExpenses').textContent = formatCurrency(s.totalExpenses);
-        if($('netProfit')) $('netProfit').textContent = formatCurrency(s.netProfit);
-        renderChart(filteredSales || state.sales);
-      }
+      function renderSummary(){ const s = computeSummary(); if($('turnover')) $('turnover').textContent = formatCurrency(s.turnover); if($('totalCost')) $('totalCost').textContent = formatCurrency(s.totalCost); if($('grossProfit')) $('grossProfit').textContent = formatCurrency(s.grossProfit); if($('totalExpenses')) $('totalExpenses').textContent = formatCurrency(s.totalExpenses); if($('netProfit')) $('netProfit').textContent = formatCurrency(s.netProfit); renderChart(); }
 
-      function parseFilterDates(){
-        const from = $('filterFrom') && $('filterFrom').value ? new Date($('filterFrom').value + 'T00:00:00') : null;
-        const to = $('filterTo') && $('filterTo').value ? new Date($('filterTo').value + 'T23:59:59') : null;
-        return {from,to};
-      }
+      // chart
+      function renderChart(){ const canvas=$('turnoverChart'); if(!canvas) return; const ctx=canvas.getContext('2d'); const DPR=window.devicePixelRatio||1; canvas.width = canvas.clientWidth*DPR; canvas.height = canvas.clientHeight*DPR; ctx.setTransform(DPR,0,0,DPR,0,0); ctx.clearRect(0,0,canvas.width,canvas.height); const sales = state.sales.slice().sort((a,b)=> new Date(a.dateISO)-new Date(b.dateISO)); if(sales.length===0) return; let cum=0; const points = sales.map(s=>{ cum += s.grams*s.pricePerGram; return {t:new Date(s.dateISO), v:cum}; }); const w=canvas.clientWidth; const h=canvas.clientHeight; const maxV = points[points.length-1].v || 1; ctx.beginPath(); ctx.moveTo(0,h-10); ctx.lineTo(w,h-10); ctx.strokeStyle='rgba(16,24,36,0.06)'; ctx.stroke(); ctx.beginPath(); points.forEach((p,i)=>{ const x = (i/(points.length-1))*(w-10)+5; const y = h-12 - ((p.v)/(maxV || 1))*(h-24); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }); ctx.lineWidth=2; ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--accent-strong')||'#b8860b'; ctx.stroke(); }
 
-      // chart: simple cumulative turnover over time (gold line)
-      function renderChart(sales){
-        const canvas = $('turnoverChart'); if(!canvas) return;
-        const ctx = canvas.getContext('2d');
-        const DPR = window.devicePixelRatio || 1;
-        canvas.width = canvas.clientWidth * DPR; canvas.height = canvas.clientHeight * DPR;
-        ctx.setTransform(DPR,0,0,DPR,0,0);
-        ctx.clearRect(0,0,canvas.width,canvas.height);
-        if(!sales || sales.length===0) return;
-        const items = sales.slice().sort((a,b)=> new Date(a.dateISO)-new Date(b.dateISO));
-        const points = [];
-        let cum = 0;
-        for(const s of items){ cum += s.grams * s.pricePerGram; points.push({t:new Date(s.dateISO),v:cum}); }
-        const w = canvas.clientWidth; const h = canvas.clientHeight;
-        const minV = 0; const maxV = points[points.length-1].v || 1;
-        ctx.beginPath(); ctx.moveTo(0,h-10); ctx.lineTo(w,h-10); ctx.strokeStyle='rgba(16,24,36,0.06)'; ctx.stroke();
-        ctx.beginPath();
-        points.forEach((p,i)=>{
-          const x = (i/(points.length-1)) * (w-10) + 5;
-          const y = h - 12 - ((p.v - minV)/(maxV - minV || 1)) * (h-24);
-          if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-        });
-        ctx.lineWidth = 2; ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-strong') || '#b8860b'; ctx.stroke();
-      }
-
-      // initial render
       function renderAll(){ renderSales(); renderExpenses(); renderSummary(); }
       renderAll();
 
-      // ensure sale price sync when default sell changes
-      if($('sellPerGram')) $('sellPerGram').addEventListener('input', e=> { if($('salePrice')) $('salePrice').value = e.target.value; });
-
+      // keep salePrice synced when default sell changes
+      if($('sellPerGram')) $('sellPerGram').addEventListener('input', (e)=>{ if($('salePrice')) $('salePrice').value = e.target.value; });
     });
   </script>
 </body>
