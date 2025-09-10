@@ -130,9 +130,9 @@
 
       <div class="controls">
         <div class="chip">Local storage</div>
-        <button id="exportBtn" title="Export CSV">Export</button>
-        <button id="downloadJSON" class="secondary" title="Download JSON backup">Backup</button>
-        <button id="importJSONBtn" class="ghost" title="Import JSON backup">Import</button>
+        <button id="exportBtn" title="Export CSV">Export CSV</button>
+        <button id="downloadJSON" class="secondary" title="Download JSON backup">Backup (JSON)</button>
+        <button id="importJSONBtn" class="secondary" title="Import JSON backup">Import (JSON)</button>
         <button id="clearBtn" class="secondary" title="Clear all data">Clear</button>
       </div>
     </header>
@@ -259,7 +259,7 @@
   <input id="fileInput" type="file" accept="application/json" style="display:none" />
 
   <script>
-    // Simple single-file POS app using localStorage with polished UI
+    // Simple single-file POS app using localStorage with robust event binding
     const STORAGE_KEY = 'gold-pos-data-v1';
 
     function defaultState(){
@@ -272,51 +272,64 @@
       }
     }
 
+    // helper to safely get element
+    function $(id){ return document.getElementById(id); }
+
     // run everything after DOM ready to be sure elements exist
     window.addEventListener('DOMContentLoaded', ()=>{
       function load(){
         const raw = localStorage.getItem(STORAGE_KEY);
         if(!raw) return defaultState();
-        try{ const parsed = JSON.parse(raw); return Object.assign(defaultState(), parsed); }catch(e){return defaultState()}
+        try{ const parsed = JSON.parse(raw); return Object.assign(defaultState(), parsed); }catch(e){console.warn('Failed parsing storage, resetting'); return defaultState();}
       }
 
-      function save(state){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
-
-      function $(id){ return document.getElementById(id); }
+      function save(state){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){ showToast('Failed to save data. Storage full?', true); }}
 
       let state = load();
 
       // fill settings (leave empty if not set)
-      $('businessName').value = state.businessName || '';
-      $('costPerGram').value = state.costPerGram || '';
-      $('sellPerGram').value = state.sellPerGram || '';
+      if($('businessName')) $('businessName').value = state.businessName || '';
+      if($('costPerGram')) $('costPerGram').value = state.costPerGram || '';
+      if($('sellPerGram')) $('sellPerGram').value = state.sellPerGram || '';
 
       function formatCurrency(n){ return '₦' + Number(n||0).toLocaleString(undefined,{maximumFractionDigits:2}); }
       function uid(){ return Math.random().toString(36).slice(2,9); }
 
       // set salePrice from default sell if present
-      if(state.sellPerGram) $('salePrice').value = state.sellPerGram;
+      if(state.sellPerGram && $('salePrice')) $('salePrice').value = state.sellPerGram;
 
-      // save settings
-      $('saveSettings').onclick = ()=>{
-        state.businessName = $('businessName').value || '';
-        state.costPerGram = parseFloat($('costPerGram').value) || 0;
-        state.sellPerGram = parseFloat($('sellPerGram').value) || 0;
-        save(state); showToast('Settings saved');
-        if(state.sellPerGram) $('salePrice').value = state.sellPerGram;
-        renderAll();
+      // small toast for feedback
+      function showToast(msg, isError=false){
+        const t = document.createElement('div');
+        t.textContent = msg; t.style.position='fixed'; t.style.right='20px'; t.style.bottom='20px'; t.style.padding='12px 16px';
+        t.style.borderRadius='10px'; t.style.boxShadow='0 6px 20px rgba(16,24,36,0.12)'; t.style.fontWeight=600;
+        t.style.background = isError ? 'rgba(123,31,31,0.95)' : 'linear-gradient(90deg,var(--accent),var(--accent-strong))';
+        t.style.color = '#fff'; t.style.zIndex = 9999; document.body.appendChild(t);
+        setTimeout(()=>{ t.style.transition='opacity 300ms'; t.style.opacity=0; setTimeout(()=>t.remove(),300); }, 2200);
+      }
+
+      // --------- Event bindings (all guarded) ---------
+      const saveSettingsBtn = $('saveSettings');
+      if(saveSettingsBtn){
+        saveSettingsBtn.addEventListener('click', ()=>{
+          state.businessName = $('businessName').value || '';
+          state.costPerGram = parseFloat($('costPerGram').value) || 0;
+          state.sellPerGram = parseFloat($('sellPerGram').value) || 0;
+          save(state); showToast('Settings saved');
+          if(state.sellPerGram && $('salePrice')) $('salePrice').value = state.sellPerGram;
+          renderAll();
+        });
       }
 
       // add sale
       const addSaleBtn = $('addSale');
       function validateSaleInputs(){
-        const grams = parseFloat($('saleGrams').value);
+        const gramsInput = $('saleGrams'); if(!gramsInput) return false;
+        const grams = parseFloat(gramsInput.value);
         return grams && grams > 0;
       }
-      $('saleGrams').addEventListener('input', ()=> addSaleBtn.disabled = !validateSaleInputs());
-      addSaleBtn.disabled = !validateSaleInputs();
-
-      addSaleBtn.onclick = ()=>{
+      if($('saleGrams')) $('saleGrams').addEventListener('input', ()=>{ if(addSaleBtn) addSaleBtn.disabled = !validateSaleInputs(); });
+      if(addSaleBtn){ addSaleBtn.disabled = !validateSaleInputs(); addSaleBtn.addEventListener('click', ()=>{
         const grams = parseFloat($('saleGrams').value);
         const price = parseFloat($('salePrice').value) || state.sellPerGram || 0;
         const dt = $('saleDate').value ? new Date($('saleDate').value) : new Date();
@@ -330,11 +343,11 @@
         addSaleBtn.disabled = true;
         renderAll();
         showToast('Sale added');
-      }
+      }); }
 
       // add expense
       const addExpenseBtn = $('addExpense');
-      addExpenseBtn.onclick = ()=>{
+      if(addExpenseBtn){ addExpenseBtn.addEventListener('click', ()=>{
         const desc = $('expenseDesc').value || 'Expense';
         const amount = parseFloat($('expenseAmount').value);
         const dt = $('expenseDate').value ? new Date($('expenseDate').value) : new Date();
@@ -345,12 +358,92 @@
         $('expenseDesc').value=''; $('expenseAmount').value=''; $('expenseDate').value='';
         renderAll();
         showToast('Expense added');
+      }); }
+
+      // apply filter
+      const applyFilterBtn = $('applyFilter');
+      if(applyFilterBtn){ applyFilterBtn.addEventListener('click', ()=>{
+        const {from,to} = parseFilterDates();
+        const fs = state.sales.filter(s=>{
+          const d = new Date(s.dateISO);
+          if(from && d < from) return false;
+          if(to && d > to) return false;
+          return true;
+        });
+        const fe = state.expenses.filter(e=>{
+          const d = new Date(e.dateISO);
+          if(from && d < from) return false;
+          if(to && d > to) return false;
+          return true;
+        });
+        renderSales(fs);
+        renderExpenses();
+        renderSummary(fs, fe);
+      }); }
+
+      // export CSV
+      const exportBtn = $('exportBtn');
+      function exportCSV(){
+        let rows = [];
+        rows.push(['Type','Date','Item','Grams','UnitPrice','Revenue','Cost','Profit','Amount']);
+        for(const s of state.sales){
+          const revenue = s.grams * s.pricePerGram;
+          const cost = s.grams * (state.costPerGram||0);
+          const profit = revenue - cost;
+          rows.push(['Sale', new Date(s.dateISO).toISOString(), state.businessName || '', s.grams, s.pricePerGram, revenue, cost, profit, '']);
+        }
+        for(const e of state.expenses){ rows.push(['Expense', new Date(e.dateISO).toISOString(), e.desc, '', '', '', '', '', e.amount]); }
+        const csv = rows.map(r=> r.map(c=> '"'+String(c).replace(/"/g,'""')+'"').join(',')).join('
+');
+        const blob = new Blob([csv],{type:'text/csv'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'gold-pos-data.csv'; a.click(); URL.revokeObjectURL(url);
+        showToast('CSV exported');
+      }
+      if(exportBtn) exportBtn.addEventListener('click', exportCSV);
+      const exportSummaryBtn = $('exportSummary'); if(exportSummaryBtn) exportSummaryBtn.addEventListener('click', exportCSV);
+
+      // download JSON backup
+      const downloadJSONBtn = $('downloadJSON');
+      if(downloadJSONBtn) downloadJSONBtn.addEventListener('click', ()=>{
+        const blob = new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'gold-pos-data.json'; a.click(); URL.revokeObjectURL(url);
+        showToast('Backup downloaded');
+      });
+
+      // import JSON
+      const importBtn = $('importJSONBtn');
+      const fileInput = $('fileInput');
+      if(importBtn && fileInput){
+        importBtn.addEventListener('click', ()=> fileInput.click());
+        fileInput.addEventListener('change', (ev)=>{
+          const f = ev.target.files && ev.target.files[0]; if(!f) return;
+          const reader = new FileReader();
+          reader.onload = e=>{
+            try{
+              const parsed = JSON.parse(e.target.result);
+              if(!confirm('Importing will replace current data. Continue?')) return;
+              state = Object.assign(defaultState(), parsed);
+              save(state); renderAll(); showToast('Data imported');
+            }catch(err){ showToast('Invalid JSON file', true); }
+          };
+          reader.readAsText(f);
+          ev.target.value = '';
+        });
       }
 
-      // render sales table
+      // clear
+      const clearBtn = $('clearBtn'); if(clearBtn) clearBtn.addEventListener('click', ()=>{
+        if(!confirm('This will delete all stored data in this browser. Continue?')) return;
+        try{ localStorage.removeItem(STORAGE_KEY); state = defaultState(); save(state); location.reload(); }catch(e){ showToast('Failed to clear storage', true); }
+      });
+
+      // --------- Rendering ---------
       function renderSales(filteredSales){
         const wrap = $('salesTableWrap');
         const sales = filteredSales || state.sales.slice().sort((a,b)=> new Date(b.dateISO)-new Date(a.dateISO));
+        if(!wrap) return;
         if(sales.length===0){ wrap.innerHTML = '<div class="muted">No sales recorded yet.</div>'; return }
         let html = '<table><thead><tr><th>Date</th><th>Grams</th><th>Price/gram</th><th>Revenue</th><th>Cost</th><th>Profit</th><th></th></tr></thead><tbody>';
         for(const s of sales){
@@ -361,16 +454,16 @@
         }
         html += '</tbody></table>';
         wrap.innerHTML = html;
-        wrap.querySelectorAll('.delSale').forEach(btn=> btn.onclick = e=>{
+        wrap.querySelectorAll('.delSale').forEach(btn=> btn.addEventListener('click', e=>{
           const id = e.currentTarget.getAttribute('data-id');
           if(!confirm('Delete this sale?')) return;
           state.sales = state.sales.filter(x=>x.id!==id);
           save(state); renderAll(); showToast('Sale deleted');
-        });
+        }));
       }
 
       function renderExpenses(){
-        const el = $('expensesList');
+        const el = $('expensesList'); if(!el) return;
         if(state.expenses.length===0){ el.innerHTML = '<div class="muted">No expenses</div>'; return }
         const items = state.expenses.slice().sort((a,b)=> new Date(b.dateISO)-new Date(a.dateISO));
         el.innerHTML = items.map(i=> `<div style="padding:8px;border-bottom:1px dashed rgba(16,24,36,0.04)"><div style="font-weight:600">${i.desc}</div><div class="small muted">${new Date(i.dateISO).toLocaleDateString()} • ${formatCurrency(i.amount)}</div></div>`).join('');
@@ -389,42 +482,23 @@
 
       function renderSummary(filteredSales, filteredExpenses){
         const s = computeSummary(filteredSales, filteredExpenses);
-        $('turnover').textContent = formatCurrency(s.turnover);
-        $('totalCost').textContent = formatCurrency(s.totalCost);
-        $('grossProfit').textContent = formatCurrency(s.grossProfit);
-        $('totalExpenses').textContent = formatCurrency(s.totalExpenses);
-        $('netProfit').textContent = formatCurrency(s.netProfit);
+        if($('turnover')) $('turnover').textContent = formatCurrency(s.turnover);
+        if($('totalCost')) $('totalCost').textContent = formatCurrency(s.totalCost);
+        if($('grossProfit')) $('grossProfit').textContent = formatCurrency(s.grossProfit);
+        if($('totalExpenses')) $('totalExpenses').textContent = formatCurrency(s.totalExpenses);
+        if($('netProfit')) $('netProfit').textContent = formatCurrency(s.netProfit);
         renderChart(filteredSales || state.sales);
       }
 
       function parseFilterDates(){
-        const from = $('filterFrom').value ? new Date($('filterFrom').value + 'T00:00:00') : null;
-        const to = $('filterTo').value ? new Date($('filterTo').value + 'T23:59:59') : null;
+        const from = $('filterFrom') && $('filterFrom').value ? new Date($('filterFrom').value + 'T00:00:00') : null;
+        const to = $('filterTo') && $('filterTo').value ? new Date($('filterTo').value + 'T23:59:59') : null;
         return {from,to};
-      }
-
-      $('applyFilter').onclick = ()=>{
-        const {from,to} = parseFilterDates();
-        const fs = state.sales.filter(s=>{
-          const d = new Date(s.dateISO);
-          if(from && d < from) return false;
-          if(to && d > to) return false;
-          return true;
-        });
-        const fe = state.expenses.filter(e=>{
-          const d = new Date(e.dateISO);
-          if(from && d < from) return false;
-          if(to && d > to) return false;
-          return true;
-        });
-        renderSales(fs);
-        renderExpenses();
-        renderSummary(fs, fe);
       }
 
       // chart: simple cumulative turnover over time (gold line)
       function renderChart(sales){
-        const canvas = document.getElementById('turnoverChart');
+        const canvas = $('turnoverChart'); if(!canvas) return;
         const ctx = canvas.getContext('2d');
         const DPR = window.devicePixelRatio || 1;
         canvas.width = canvas.clientWidth * DPR; canvas.height = canvas.clientHeight * DPR;
@@ -447,75 +521,12 @@
         ctx.lineWidth = 2; ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-strong') || '#b8860b'; ctx.stroke();
       }
 
-      // export CSV of all sales + expenses
-      function exportCSV(){
-        let rows = [];
-        rows.push(['Type','Date','Item','Grams','UnitPrice','Revenue','Cost','Profit','Amount']);
-        for(const s of state.sales){
-          const revenue = s.grams * s.pricePerGram;
-          const cost = s.grams * (state.costPerGram||0);
-          const profit = revenue - cost;
-          rows.push(['Sale', new Date(s.dateISO).toISOString(), state.businessName || '', s.grams, s.pricePerGram, revenue, cost, profit, '']);
-        }
-        for(const e of state.expenses){ rows.push(['Expense', new Date(e.dateISO).toISOString(), e.desc, '', '', '', '', '', e.amount]); }
-        const csv = rows.map(r=> r.map(c=> '"'+String(c).replace(/"/g,'""')+'"').join(',')).join('
-');
-        const blob = new Blob([csv],{type:'text/csv'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = 'gold-pos-data.csv'; a.click(); URL.revokeObjectURL(url);
-      }
-
-      // wire buttons (safe because DOMContentLoaded)
-      $('exportBtn').onclick = exportCSV;
-      $('exportSummary').onclick = exportCSV;
-
-      $('downloadJSON').onclick = ()=>{
-        const blob = new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = 'gold-pos-data.json'; a.click(); URL.revokeObjectURL(url);
-      }
-
-      // import JSON
-      $('importJSONBtn').onclick = ()=>{ $('fileInput').click(); };
-      $('fileInput').addEventListener('change', (ev)=>{
-        const f = ev.target.files && ev.target.files[0]; if(!f) return;
-        const reader = new FileReader();
-        reader.onload = e=>{
-          try{
-            const parsed = JSON.parse(e.target.result);
-            if(!confirm('Importing will replace current data. Continue?')) return;
-            state = Object.assign(defaultState(), parsed);
-            save(state); renderAll(); showToast('Data imported');
-          }catch(err){ showToast('Invalid JSON file', true); }
-        };
-        reader.readAsText(f);
-        ev.target.value = '';
-      });
-
-      $('clearBtn').onclick = ()=>{
-        if(!confirm('This will delete all stored data in this browser. Continue?')) return;
-        localStorage.removeItem(STORAGE_KEY); state = defaultState(); save(state); location.reload();
-      }
-
-      // render everything
-      function renderAll(){
-        renderSales(); renderExpenses(); renderSummary();
-      }
-
+      // initial render
+      function renderAll(){ renderSales(); renderExpenses(); renderSummary(); }
       renderAll();
 
-      // update salePrice when default sell changes
-      $('sellPerGram').addEventListener('input', e=> $('salePrice').value = e.target.value);
-
-      // small toast for feedback
-      function showToast(msg, isError=false){
-        const t = document.createElement('div');
-        t.textContent = msg; t.style.position='fixed'; t.style.right='20px'; t.style.bottom='20px'; t.style.padding='12px 16px';
-        t.style.borderRadius='10px'; t.style.boxShadow='0 6px 20px rgba(16,24,36,0.12)'; t.style.fontWeight=600;
-        t.style.background = isError ? 'rgba(123,31,31,0.95)' : 'linear-gradient(90deg,var(--accent),var(--accent-strong))';
-        t.style.color = '#fff'; t.style.zIndex = 9999; document.body.appendChild(t);
-        setTimeout(()=>{ t.style.transition='opacity 300ms'; t.style.opacity=0; setTimeout(()=>t.remove(),300); }, 2200);
-      }
+      // ensure sale price sync when default sell changes
+      if($('sellPerGram')) $('sellPerGram').addEventListener('input', e=> { if($('salePrice')) $('salePrice').value = e.target.value; });
 
     });
   </script>
