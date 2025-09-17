@@ -333,50 +333,39 @@
         </div>
     </div>
     
-    
     <script>
         const firebaseConfig = {
-          apiKey: "AIzaSyBSSRpPRIADDgIfzgPG-WYmb4-kwS1EtmA",
-          authDomain: "gold-pos-tracker.firebaseapp.com",
-          projectId: "gold-pos-tracker",
-          storageBucket: "gold-pos-tracker.firebasestorage.app",
-          messagingSenderId: "630931260385",
-          appId: "1:630931260385:web:7d6c95ee8e34b8d2bc88a0"
+            apiKey: "AIzaSyBSSRpPRIADDgIfzgPG-WYmb4-kwS1EtmA",
+            authDomain: "gold-pos-tracker.firebaseapp.com",
+            projectId: "gold-pos-tracker",
+            storageBucket: "gold-pos-tracker.firebasestorage.app",
+            messagingSenderId: "630931260385",
+            appId: "1:630931260385:web:7d6c95ee8e34b8d2bc88a0"
         };
     
         let db;
         let auth;
     
         document.addEventListener('DOMContentLoaded', () => {
-            // Initialize Firebase services
             if (!firebase.apps.length) {
                 firebase.initializeApp(firebaseConfig);
             }
             db = firebase.firestore();
             auth = firebase.auth();
     
-            // Check the user's login state
             auth.onAuthStateChanged(user => {
                 const authUi = document.getElementById('auth-ui');
                 const mainContent = document.querySelector('.main-content');
                 if (user) {
                     if (authUi) authUi.style.display = 'none';
                     if (mainContent) mainContent.style.display = 'block'; 
-                    
-                    // Set up a real-time listener for the user's sales data
-                    db.collection('sales')
-                      .where('userId', '==', user.uid)
-                      .orderBy('timestamp', 'desc')
-                      .onSnapshot(snapshot => {
-                          updateSalesTable(snapshot);
-                      });
+                    fetchSales(); // Call fetchSales() when a user logs in
                 } else {
                     if (authUi) authUi.style.display = 'block';
                     if (mainContent) mainContent.style.display = 'none';
                 }
             });
     
-            // Event listeners for auth buttons
             const loginBtn = document.getElementById('loginBtn');
             const signupBtn = document.getElementById('signupBtn');
             const logoutBtn = document.getElementById('logoutBtn');
@@ -384,7 +373,6 @@
             if (signupBtn) signupBtn.addEventListener('click', signup);
             if (logoutBtn) logoutBtn.addEventListener('click', logout);
     
-            // Event listeners for existing sales tracker buttons
             document.getElementById('addSaleBtn').addEventListener('click', addSale);
             document.getElementById('exportCsvBtn').addEventListener('click', exportCSV);
         });
@@ -417,7 +405,7 @@
             return '₦' + Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
         }
     
-        function updateSalesTable(snapshot) {
+        async function fetchSales() {
             const salesTableBody = document.querySelector('#salesTable tbody');
             salesTableBody.innerHTML = '';
             
@@ -429,43 +417,50 @@
             let totalCost = 0;
             let totalProfit = 0;
             
-            if (snapshot.empty) {
-                salesTableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--muted-text);">No sales recorded yet.</td></tr>';
-                turnoverValue.textContent = formatCurrency(0);
-                totalCostValue.textContent = formatCurrency(0);
-                grossProfitValue.textContent = formatCurrency(0);
-                return;
-            }
+            try {
+                const snapshot = await db.collection('sales').orderBy('timestamp', 'desc').get();
             
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                const profit = (data.salePrice - data.costPrice) * data.amount;
-                const turnover = data.salePrice * data.amount;
-                const cost = data.costPrice * data.amount;
+                if (snapshot.empty) {
+                    salesTableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--muted-text);">No sales recorded yet.</td></tr>';
+                    turnoverValue.textContent = formatCurrency(0);
+                    totalCostValue.textContent = formatCurrency(0);
+                    grossProfitValue.textContent = formatCurrency(0);
+                    return;
+                }
             
-                totalTurnover += turnover;
-                totalCost += cost;
-                totalProfit += profit;
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const profit = (data.salePrice - data.costPrice) * data.amount;
+                    const turnover = data.salePrice * data.amount;
+                    const cost = data.costPrice * data.amount;
                 
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${new Date(data.timestamp).toLocaleString()}</td>
-                    <td>${formatCurrency(data.salePrice)}</td>
-                    <td>${data.amount.toFixed(2)}</td>
-                    <td>${formatCurrency(data.costPrice)}</td>
-                    <td>${formatCurrency(profit)}</td>
-                    <td><button class="delete-btn" data-id="${doc.id}">Delete</button></td>
-                `;
-                salesTableBody.appendChild(row);
-            });
+                    totalTurnover += turnover;
+                    totalCost += cost;
+                    totalProfit += profit;
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${new Date(data.timestamp).toLocaleString()}</td>
+                        <td>${formatCurrency(data.salePrice)}</td>
+                        <td>${data.amount.toFixed(2)}</td>
+                        <td>${formatCurrency(data.costPrice)}</td>
+                        <td>${formatCurrency(profit)}</td>
+                        <td><button class="delete-btn" data-id="${doc.id}">Delete</button></td>
+                    `;
+                    salesTableBody.appendChild(row);
+                });
+                
+                turnoverValue.textContent = formatCurrency(totalTurnover);
+                totalCostValue.textContent = formatCurrency(totalCost);
+                grossProfitValue.textContent = formatCurrency(totalProfit);
+                
+                document.querySelectorAll('.delete-btn').forEach(btn => {
+                    btn.addEventListener('click', deleteSale);
+                });
             
-            turnoverValue.textContent = formatCurrency(totalTurnover);
-            totalCostValue.textContent = formatCurrency(totalCost);
-            grossProfitValue.textContent = formatCurrency(totalProfit);
-            
-            document.querySelectorAll('.delete-btn').forEach(btn => {
-                btn.addEventListener('click', deleteSale);
-            });
+            } catch (error) {
+                console.error("Error fetching sales:", error);
+            }
         }
     
         async function addSale() {
@@ -482,8 +477,7 @@
                 salePrice: salePrice,
                 amount: amount,
                 costPrice: costPrice,
-                timestamp: new Date().toISOString(),
-                userId: auth.currentUser.uid 
+                timestamp: new Date().toISOString()
             };
     
             try {
@@ -491,6 +485,7 @@
                 document.getElementById('salePrice').value = '';
                 document.getElementById('amount').value = '';
                 document.getElementById('costPrice').value = '';
+                fetchSales();
             } catch (error) {
                 console.error("Error adding sale:", error);
             }
@@ -501,6 +496,7 @@
             if (confirm("Are you sure you want to delete this sale?")) {
                 try {
                     await db.collection('sales').doc(id).delete();
+                    fetchSales();
                 } catch (error) {
                     console.error("Error removing sale: ", error);
                 }
@@ -508,10 +504,7 @@
         }
     
         function exportCSV() {
-            const userId = auth.currentUser.uid;
-            
             db.collection('sales')
-                .where('userId', '==', userId)
                 .orderBy('timestamp', 'desc')
                 .get()
                 .then(snapshot => {
