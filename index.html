@@ -440,34 +440,35 @@
     }
 
     async function addSale() {
-        const salePrice = parseFloat(document.getElementById('salePrice').value);
-        const amount = parseFloat(document.getElementById('amount').value);
-        const costPrice = parseFloat(document.getElementById('costPrice').value);
+    const salePrice = parseFloat(document.getElementById('salePrice').value);
+    const amount = parseFloat(document.getElementById('amount').value);
+    const costPrice = parseFloat(document.getElementById('costPrice').value);
 
-        if (!salePrice || !amount || !costPrice || salePrice <= 0 || amount <= 0 || costPrice <= 0) {
-            alert('Please enter valid numbers for all fields.');
-            return;
-        }
+    if (!salePrice || !amount || !costPrice || salePrice <= 0 || amount <= 0 || costPrice <= 0) {
+        alert('Please enter valid numbers for all fields.');
+        return;
+    }
 
-        const newSale = {
-            salePrice: salePrice,
-            amount: amount,
-            costPrice: costPrice,
-            timestamp: new Date().toISOString(),
-            // Add the current user's UID to the document
-            userId: auth.currentUser.uid 
-        };
+    const newSale = {
+        salePrice: salePrice,
+        amount: amount,
+        costPrice: costPrice,
+        timestamp: new Date().toISOString(),
+        userId: auth.currentUser.uid 
+    };
 
-        try {
-            await db.collection('sales').add(newSale);
+    try {
+        await db.collection('sales').add(newSale)
+        .then(() => {
             document.getElementById('salePrice').value = '';
             document.getElementById('amount').value = '';
             document.getElementById('costPrice').value = '';
-            fetchSales();
-        } catch (error) {
-            console.error("Error adding sale:", error);
-        }
+            fetchSales(); // Call fetchSales() after the data is successfully added
+        });
+    } catch (error) {
+        console.error("Error adding sale:", error);
     }
+}
 
     async function deleteSale(event) {
         const id = event.target.dataset.id;
