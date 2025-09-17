@@ -1,510 +1,443 @@
-<!-- Chosen Palette: Gold & Neutral -->
-<!-- Application Structure Plan: The application uses a two-column dashboard layout. The main column on the left is for data entry (Settings, Sales, Expenses) and viewing detailed records (Sales table). The right-hand sidebar is for at-a-glance summaries (financial metrics, turnover chart, expense list) and primary actions (exports). This structure is effective because it separates input tasks from output analysis, allowing users to quickly record transactions while keeping key performance indicators always visible. -->
-<!-- Visualization & Content Choices: 
-- Financial Totals: Displayed as key metrics. Goal is to inform. Presented as styled text for quick reading.
-- Sales Log: Presented in a detailed HTML table. Goal is to organize and allow inspection. The new columns for Cost Price and Sale Price allow for granular profit tracking. Interaction includes deleting individual entries via a button, with a non-blocking confirmation modal to prevent accidental data loss.
-- Expense List: A simple, scrollable list. Goal is to inform. It shows recent expenses without cluttering the main view.
-- Cumulative Turnover: Visualized with an interactive line chart using Chart.js. Goal is to show change over time. A line chart is ideal for visualizing growth trends. It's interactive, providing tooltips on hover for specific data points. Replaces the previous static canvas drawing.
-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Gold POS — Sales & Finance Tracker (Light)</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    :root{
-      --bg: #f6f5f3;
-      --card: #ffffff;
-      --accent: #d4af37;
-      --accent-strong: #b8860b;
-      --muted: #6b6f76;
-      --border: rgba(16,24,36,0.08);
-      --glass: rgba(212,175,55,0.06);
-      --text: #0f1724;
-      --success: #1f6e3f;
-      --danger: #7b1f1f;
-      --shadow: 0 8px 30px rgba(16,24,36,0.06);
-      --radius: 12px;
-      --gap: 14px;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gold POS - Sales Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <style>
+        :root {
+            --primary-color: #d4af37;
+            --primary-dark: #b8860b;
+            --background-color: #f4f4f9;
+            --card-background: #ffffff;
+            --text-color: #333;
+            --muted-text: #666;
+            --border-color: #e0e0e0;
+            --shadow-light: 0 4px 12px rgba(0, 0, 0, 0.05);
+            --border-radius: 12px;
+        }
 
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-    *{box-sizing:border-box;font-family:Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial}
-    html,body{height:100%;}
-    body{margin:0;background:linear-gradient(180deg,var(--bg) 0%, #ffffff 100%);color:var(--text);padding:20px}
-    .container{max-width:1180px;margin:0 auto}
-    header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:16px}
-    .brand{display:flex;gap:12px;align-items:center}
-    .logo{width:56px;height:56px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-strong));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px;box-shadow:var(--shadow)}
-    h1{font-size:18px;margin:0}
-    .controls{display:flex;gap:10px;align-items:center}
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
 
-    input,select,button,textarea{background:var(--card);border:1px solid var(--border);padding:10px 12px;border-radius:10px;color:var(--text);font-size:14px;transition: box-shadow 150ms ease, border-color 150ms ease;}
-    input:focus,select:focus,textarea:focus{outline:none;box-shadow:0 0 0 4px rgba(212,175,55,0.08);border-color:var(--accent-strong)}
-    button{cursor:pointer;background:linear-gradient(180deg,var(--accent),var(--accent-strong));color:#fff;border:none;padding:9px 12px;border-radius:10px;font-weight:600}
-    button.secondary{background:transparent;color:var(--text);border:1px solid var(--border);font-weight:600}
-    button.danger{background: var(--danger); color: white;}
-    button.ghost{background:transparent;border:1px dashed rgba(16,24,36,0.06)}
-    button:disabled{opacity:0.6;cursor:not-allowed}
+        .container {
+            max-width: 900px;
+            width: 100%;
+            display: grid;
+            gap: 20px;
+        }
 
-    .grid{display:grid;grid-template-columns:1fr 360px;gap:var(--gap)}
-    .card{background:var(--card);padding:16px;border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow)}
-    .card h3, .card h4{margin:0 0 10px 0;font-size:15px}
-    .form-row{display:flex;gap:10px;margin-bottom:12px;align-items:end}
-    label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
-    table{width:100%;border-collapse:collapse}
-    thead th{font-size:12px;color:var(--muted);text-align:left;padding:10px;border-bottom:1px solid rgba(16,24,36,0.04)}
-    tbody td{padding:10px;border-bottom:1px solid rgba(16,24,36,0.03);font-size:13px}
-    tbody tr:nth-child(even){background:linear-gradient(90deg, rgba(212,175,55,0.01), transparent)}
-    .muted{color:var(--muted);font-size:13px}
-    .summary{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-    .summary .item{padding:12px;border-radius:10px;background:linear-gradient(180deg, rgba(212,175,55,0.03), rgba(212,175,55,0.01));text-align:center;border:1px solid rgba(212,175,55,0.06)}
-    .small{font-size:12px}
-    .table-wrap{max-height:360px;overflow:auto;border-radius:8px}
-    .actions{display:flex;gap:8px}
-    .chip{padding:6px 12px;border-radius:999px;background:rgba(16,24,36,0.03);font-size:12px}
-    footer{text-align:center;margin-top:24px;font-size:12px;color:var(--muted)}
-    
-    .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,36,0.6);display:flex;align-items:center;justify-content:center;z-index:1000;opacity:0;visibility:hidden;transition:opacity 150ms ease, visibility 150ms ease;}
-    .modal-overlay.visible{opacity:1;visibility:visible;}
-    .modal-dialog{background:var(--card);padding:24px;border-radius:var(--radius);box-shadow:var(--shadow);width:90%;max-width:400px;transform:scale(0.95);transition:transform 150ms ease;}
-    .modal-overlay.visible .modal-dialog{transform:scale(1);}
-    .modal-dialog p{margin:0 0 20px 0; font-size: 15px; line-height: 1.5;}
-    .modal-actions{display:flex;justify-content:flex-end;gap:10px;}
-    .chart-container{position:relative;height:150px;width:100%;}
-    
-    @media (max-width:1000px){ .grid{grid-template-columns:1fr} .summary{grid-template-columns:repeat(2,1fr)} }
-    @media (max-width:700px){ body{padding:12px} header{flex-direction:column;align-items:flex-start} .controls{width:100%;display:flex;flex-wrap:wrap} .controls .chip{display:none} .form-row{flex-direction:column;align-items:stretch} .form-row > div{width:100% !important} .form-row [style*="width:"]{width:100% !important} #addSale,#addExpense,#saveSettings{width:100%;} .summary{grid-template-columns:1fr} .table-wrap{max-height:260px} .chart-container{height:180px} .card{padding:12px} .container{padding:0 6px} }
-    @media (max-width:420px){ .logo{width:40px;height:40px} h1{font-size:16px} input,button{font-size:14px;padding:10px} thead th{font-size:11px} tbody td{padding:8px} }
-    @media (max-width:520px){ .table-wrap{overflow-x:auto} table{min-width:680px} }
-  </style>
+        header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        h1 {
+            color: var(--primary-dark);
+            font-weight: 700;
+            margin: 0;
+            font-size: 2.5rem;
+        }
+
+        .card {
+            background-color: var(--card-background);
+            padding: 24px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-light);
+            border: 1px solid var(--border-color);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+            margin: 0;
+            color: var(--text-color);
+        }
+
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-size: 0.85rem;
+            color: var(--muted-text);
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        input {
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .add-button {
+            grid-column: span 1;
+            align-self: end;
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .summary-item {
+            background-color: var(--background-color);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .summary-label {
+            font-size: 0.8rem;
+            color: var(--muted-text);
+            font-weight: 600;
+        }
+
+        .summary-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-top: 5px;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        thead {
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .delete-btn {
+            background-color: #dc3545;
+            padding: 8px 12px;
+        }
+
+        .delete-btn:hover {
+            background-color: #c82333;
+        }
+        
+        .footer {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--muted-text);
+            margin-top: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+            }
+
+            .input-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .add-button {
+                grid-column: span 1;
+                margin-top: 10px;
+            }
+        }
+
+    </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <div class="brand">
-        <div class="logo">Au</div>
-        <div>
-          <h1>Gold POS</h1>
-          <div class="muted small">Sales & finance tracker — light theme</div>
-        </div>
-      </div>
+    <div class="container">
+        <header>
+            <h1>Gold POS</h1>
+            <p style="color: var(--muted-text);">Simple Sales & Finance Tracker</p>
+        </header>
 
-      <div class="controls">
-        <div class="chip">Local storage</div>
-        <button id="exportBtn" title="Export CSV">Export CSV</button>
-        <button id="downloadJSON" class="secondary" title="Download JSON backup">Backup (JSON)</button>
-        <button id="importJSONBtn" class="secondary" title="Import JSON backup">Import (JSON)</button>
-        <button id="clearBtn" class="danger" title="Clear all data">Clear</button>
-      </div>
-    </header>
-
-    <div class="grid">
-      <main>
         <div class="card">
-          <h3>Business settings</h3>
-          <div class="form-row">
-            <div style="flex:1">
-              <label for="businessName">Business name</label>
-              <input id="businessName" placeholder="e.g. ABC Gold Shop" />
+            <div class="card-header">
+                <h2>New Sale</h2>
+                <button id="exportCsvBtn">Export CSV</button>
             </div>
-            <div style="width:160px">
-              <label for="defaultCostPerGram">Default cost (₦) / gram</label>
-              <input id="defaultCostPerGram" type="number" step="0.01" />
+            <div class="input-grid">
+                <div class="form-group">
+                    <label for="salePrice">Sale Price (₦)</label>
+                    <input type="number" id="salePrice" placeholder="e.g., 25000" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label for="amount">Weight (g)</label>
+                    <input type="number" id="amount" placeholder="e.g., 5.3" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label for="costPrice">Cost Price (₦)</label>
+                    <input type="number" id="costPrice" placeholder="e.g., 23000" step="0.01">
+                </div>
+                <button class="add-button" id="addSaleBtn">Add Sale</button>
             </div>
-            <div style="width:160px">
-              <label for="defaultSellPerGram">Default sell (₦) / gram</label>
-              <input id="defaultSellPerGram" type="number" step="0.01" />
+
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="summary-label">Turnover</div>
+                    <div class="summary-value" id="turnoverValue">₦0</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">Total Cost</div>
+                    <div class="summary-value" id="totalCostValue">₦0</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">Gross Profit</div>
+                    <div class="summary-value" id="grossProfitValue">₦0</div>
+                </div>
             </div>
-            <div style="width:100px;display:flex;align-items:end">
-              <button id="saveSettings">Save</button>
-            </div>
-          </div>
         </div>
 
-        <div class="card" style="margin-top:12px">
-          <h3>Record a sale</h3>
-          <div class="form-row">
-            <div style="flex:1">
-              <label for="saleGrams">Grams sold</label>
-              <input id="saleGrams" type="number" step="0.01" placeholder="e.g. 2.34" />
-            </div>
-            <div style="width:160px">
-              <label for="salePrice">Sale price (₦) / gram</label>
-              <input id="salePrice" type="number" step="0.01" />
-            </div>
-            <div style="width:160px">
-              <label for="costPrice">Cost price (₦) / gram</label>
-              <input id="costPrice" type="number" step="0.01" />
-            </div>
-            <div style="width:180px; display: flex; flex-direction: column;">
-              <label for="saleDate">Date</label>
-              <input id="saleDate" type="date" />
-            </div>
-            <div style="width:120px; display: flex; flex-direction: column;">
-                <label for="saleTime">Time</label>
-                <input id="saleTime" type="time" />
-            </div>
-          </div>
-          <div class="form-row">
-            <div style="flex:1">
-              <label for="goldType">Gold Type</label>
-              <select id="goldType">
-                <option value="24k">24k</option>
-                <option value="22k">22k</option>
-                <option value="18k">18k</option>
-                <option value="14k">14k</option>
-                <option value="10k">10k</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-            <div style="flex:1">
-              <label for="customerName">Customer Name (optional)</label>
-              <input id="customerName" placeholder="e.g. Jane Doe" />
-            </div>
-            <div style="width:120px;display:flex;align-items:end">
-              <button id="addSale">Add sale</button>
-            </div>
-          </div>
-          <div class="muted small">Tip: Default prices from settings are automatically populated here.</div>
-        </div>
-
-        <div class="card" style="margin-top:12px">
-          <h3>Record expense</h3>
-          <div class="form-row">
-            <div style="flex:1">
-              <label for="expenseDesc">Description</label>
-              <input id="expenseDesc" placeholder="e.g. Shop rent" />
-            </div>
-            <div style="width:160px">
-              <label for="expenseAmount">Amount (₦)</label>
-              <input id="expenseAmount" type="number" step="0.01" />
-            </div>
-            <div style="width:160px">
-              <label for="expenseDate">Date</label>
-              <input id="expenseDate" type="date" />
-            </div>
-            <div style="width:120px;display:flex;align-items:end">
-              <button id="addExpense">Add</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="card" style="margin-top:12px">
-          <h3>Sales</h3>
-          <div class="table-wrap" id="salesTableWrap"></div>
-        </div>
-
-      </main>
-
-      <aside>
         <div class="card">
-          <h3>Summary</h3>
-          <div class="summary" id="summaryGrid">
-            <div class="item"><div class="small muted">Turnover</div><div id="turnover" style="font-weight:700;font-size:18px">₦0</div></div>
-            <div class="item"><div class="small muted">Total Cost</div><div id="totalCost" style="font-weight:700;font-size:18px">₦0</div></div>
-            <div class="item"><div class="small muted">Gross Profit</div><div id="grossProfit" style="font-weight:700;font-size:18px">₦0</div></div>
-            <div class="item"><div class="small muted">Total Expenses</div><div id="totalExpenses" style="font-weight:700;font-size:18px">₦0</div></div>
-            <div class="item" style="grid-column:1 / -1"><div class="small muted">Net Profit</div><div id="netProfit" style="font-weight:700;font-size:20px">₦0</div></div>
-          </div>
-
-          <div style="margin-top:12px" class="chart-container">
-            <canvas id="turnoverChartCanvas"></canvas>
-          </div>
-
-          <div style="margin-top:12px">
-            <h4>Expenses</h4>
-            <div id="expensesList" class="muted small" style="max-height:160px;overflow:auto">No expenses yet.</div>
-          </div>
-
+            <h2>Sales Log</h2>
+            <div class="table-container">
+                <table id="salesTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Sale Price (₦)</th>
+                            <th>Weight (g)</th>
+                            <th>Cost Price (₦)</th>
+                            <th>Profit (₦)</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                </table>
+            </div>
         </div>
-      </aside>
+        
+        <div class="footer">
+            <p>Data stored securely with Firebase Firestore.</p>
+        </div>
     </div>
 
-    <footer>Data is stored locally in your browser. Use the Backup and Import buttons to save or load your data.</footer>
-  </div>
-
-  <input id="fileInput" type="file" accept="application/json" style="display:none" />
   
-  <div class="modal-overlay" id="confirmModal">
-    <div class="modal-dialog">
-        <p id="confirmMessage">Are you sure?</p>
-        <div class="modal-actions">
-            <button class="secondary" id="cancelBtn">Cancel</button>
-            <button class="danger" id="confirmBtn">Confirm</button>
-        </div>
-    </div>
-  </div>
-
-  <script>
-    const STORAGE_KEY = 'gold-pos-data-v1';
-    let turnoverChartInstance = null;
-
-    function defaultState(){
-      return { businessName: '', defaultCostPerGram: 0, defaultSellPerGram: 0, sales: [], expenses: [] };
-    }
-
-    function $(id){ return document.getElementById(id); }
-    
-    function showConfirm(message, onConfirm) {
-        const modal = $('confirmModal');
-        const msgEl = $('confirmMessage');
-        const confirmBtn = $('confirmBtn');
-        const cancelBtn = $('cancelBtn');
-
-        msgEl.textContent = message;
+    <script>
+        // --- IMPORTANT: Replace with your Firebase config ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyBSSRpPRIADDgIfzgPG-WYmb4-kwS1EtmA",
+          authDomain: "gold-pos-tracker.firebaseapp.com",
+          projectId: "gold-pos-tracker",
+          storageBucket: "gold-pos-tracker.firebasestorage.app",
+          messagingSenderId: "630931260385",
+          appId: "1:630931260385:web:7d6c95ee8e34b8d2bc88a0"
+  };
         
-        const close = () => {
-            modal.classList.remove('visible');
-            confirmBtn.removeEventListener('click', onConfirmClick);
-            cancelBtn.removeEventListener('click', onCancelClick);
-        };
+        let db;
 
-        const onConfirmClick = () => {
-            onConfirm();
-            close();
-        };
-        
-        const onCancelClick = () => {
-            close();
-        };
-
-        confirmBtn.addEventListener('click', onConfirmClick, { once: true });
-        cancelBtn.addEventListener('click', onCancelClick, { once: true });
-        
-        modal.classList.add('visible');
-    }
-
-    document.addEventListener('DOMContentLoaded', ()=>{
-      let state;
-      function load(){ const raw = localStorage.getItem(STORAGE_KEY); if(!raw) return defaultState(); try{ return Object.assign(defaultState(), JSON.parse(raw)); }catch(e){ console.warn('Bad storage JSON', e); return defaultState(); } }
-      function save(){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){ showToast('Failed to save data. Storage may be full', true); } }
-
-      state = load();
-
-      if($('businessName')) $('businessName').value = state.businessName || '';
-      if($('defaultCostPerGram')) $('defaultCostPerGram').value = state.defaultCostPerGram || '';
-      if($('defaultSellPerGram')) $('defaultSellPerGram').value = state.defaultSellPerGram || '';
-      if(state.defaultSellPerGram && $('salePrice')) $('salePrice').value = state.defaultSellPerGram;
-      if(state.defaultCostPerGram && $('costPrice')) $('costPrice').value = state.defaultCostPerGram;
-
-      function uid(){ return Math.random().toString(36).slice(2,9); }
-      function formatCurrency(n){ return '₦' + Number(n||0).toLocaleString(undefined,{maximumFractionDigits:2}); }
-
-      function showToast(msg, isError=false){ const t=document.createElement('div'); t.textContent=msg; t.style.position='fixed'; t.style.right='16px'; t.style.bottom='20px'; t.style.padding='12px 14px'; t.style.borderRadius='10px'; t.style.boxShadow='0 6px 20px rgba(16,24,36,0.12)'; t.style.fontWeight=600; t.style.background = isError ? 'var(--danger)' : 'linear-gradient(90deg,var(--accent),var(--accent-strong))'; t.style.color='#fff'; t.style.zIndex=9999; t.style.opacity=0; t.style.transform='translateY(10px)'; document.body.appendChild(t); setTimeout(() => { t.style.transition='opacity 300ms, transform 300ms'; t.style.opacity=1; t.style.transform='translateY(0)'; }, 10); setTimeout(()=>{ t.style.opacity=0; t.style.transform='translateY(10px)'; setTimeout(()=>t.remove(),300); }, 2200); }
-      
-      $('saveSettings').addEventListener('click', ()=>{
-        state.businessName = $('businessName').value || '';
-        state.defaultCostPerGram = parseFloat($('defaultCostPerGram').value) || 0;
-        state.defaultSellPerGram = parseFloat($('defaultSellPerGram').value) || 0;
-        save();
-        if(state.defaultSellPerGram && $('salePrice')) $('salePrice').value = state.defaultSellPerGram;
-        if(state.defaultCostPerGram && $('costPrice')) $('costPrice').value = state.defaultCostPerGram;
-        renderAll();
-        showToast('Settings saved');
-      });
-
-      const addSaleBtn = $('addSale');
-      function validSale(){ const g = $('saleGrams'); if(!g) return false; const val = parseFloat(g.value); return val && val > 0; }
-      $('saleGrams').addEventListener('input', ()=>{ if(addSaleBtn) addSaleBtn.disabled = !validSale(); });
-      addSaleBtn.disabled = !validSale(); 
-      addSaleBtn.addEventListener('click', ()=>{
-        const grams = parseFloat($('saleGrams').value);
-        const salePrice = parseFloat($('salePrice').value) || state.defaultSellPerGram || 0;
-        const costPrice = parseFloat($('costPrice').value) || state.defaultCostPerGram || 0;
-        const goldType = $('goldType').value;
-        const customerName = $('customerName').value;
-        const saleDate = $('saleDate').value;
-        const saleTime = $('saleTime').value;
-        
-        let dt;
-        if (saleDate && saleTime) {
-            dt = new Date(`${saleDate}T${saleTime}`);
-        } else if (saleDate) {
-            dt = new Date(saleDate);
-        } else {
-            dt = new Date();
-        }
-        
-        if(!grams || grams <= 0){ showToast('Enter valid grams', true); return; }
-        state.sales.push({ id: uid(), grams: Number(grams), salePricePerGram: Number(salePrice), costPricePerGram: Number(costPrice), goldType, customerName, dateISO: dt.toISOString() });
-        save();
-        $('saleGrams').value=''; $('saleDate').value=''; $('saleTime').value=''; $('customerName').value=''; addSaleBtn.disabled=true; renderAll(); showToast('Sale added');
-      });
-
-      $('addExpense').addEventListener('click', ()=>{
-        const desc = $('expenseDesc').value || 'Expense';
-        const amount = parseFloat($('expenseAmount').value);
-        const dt = $('expenseDate').value ? new Date($('expenseDate').value) : new Date();
-        if(!amount || amount <= 0){ showToast('Enter valid amount', true); return; }
-        state.expenses.push({ id: uid(), desc, amount: Number(amount), dateISO: dt.toISOString() });
-        save();
-        $('expenseDesc').value=''; $('expenseAmount').value=''; $('expenseDate').value=''; renderAll(); showToast('Expense added');
-      });
-
-      function exportCSV(){ 
-        let rows=[['Type','Date','Customer','GoldType','Grams','SalePricePerGram','CostPricePerGram','Revenue','Cost','Profit','Amount']]; 
-        for(const s of state.sales){ const revenue = s.grams*s.salePricePerGram; const cost=s.grams*s.costPricePerGram; rows.push(['Sale', new Date(s.dateISO).toISOString(), s.customerName || '', s.goldType || '', s.grams, s.salePricePerGram, s.costPricePerGram, revenue, cost, revenue-cost, '']); } 
-        for(const e of state.expenses){ rows.push(['Expense', new Date(e.dateISO).toISOString(), '', '', '', '', '', '', '', '', e.amount]); } 
-        const csv = rows.map(r=> r.map(c=> '"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n'); 
-        const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); 
-        const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='gold-pos-data.csv'; a.click(); URL.revokeObjectURL(url); showToast('CSV exported'); 
-      }
-      $('exportBtn').addEventListener('click', exportCSV);
-      
-      $('downloadJSON').addEventListener('click', ()=>{ const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='gold-pos-data.json'; a.click(); URL.revokeObjectURL(url); showToast('Backup downloaded'); });
-
-      const fileInput = $('fileInput');
-      $('importJSONBtn').addEventListener('click', ()=> fileInput.click()); 
-      fileInput.addEventListener('change', (ev)=>{ 
-        const f=ev.target.files&&ev.target.files[0]; 
-        if(!f) return; 
-        const reader=new FileReader(); 
-        reader.onload = e=>{ 
-          try{ 
-            const parsed=JSON.parse(e.target.result); 
-            showConfirm('Importing will replace current data. Continue?', () => {
-                state = Object.assign(defaultState(), parsed); 
-                save(); 
-                renderAll(); 
-                showToast('Data imported'); 
-            });
-          }catch(err){ 
-            showToast('Invalid JSON file', true); 
-          } 
-        }; 
-        reader.readAsText(f); ev.target.value=''; 
-      });
-
-      $('clearBtn').addEventListener('click', ()=>{
-        showConfirm('This will delete all stored data in this browser. Are you sure?', () => {
-             try{ 
-                localStorage.removeItem(STORAGE_KEY); 
-                state = defaultState(); 
-                save(); 
-                location.reload(); 
-            } catch(e){ 
-                showToast('Failed to clear storage', true); 
-            }
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeFirebase();
         });
-      });
 
-      function renderSales(){ 
-        const wrap = $('salesTableWrap'); 
-        if(!wrap) return; 
-        const sales = state.sales.slice().sort((a,b)=> new Date(b.dateISO)-new Date(a.dateISO)); 
-        if(sales.length===0){ wrap.innerHTML='<div class="muted" style="padding:10px;">No sales recorded yet.</div>'; return; } 
-        let html='<table><thead><tr><th>Date & Time</th><th>Customer</th><th>Type</th><th>Grams</th><th>Sale Price</th><th>Cost Price</th><th>Profit</th><th></th></tr></thead><tbody>'; 
-        for(const s of sales){ const revenue=s.grams*s.salePricePerGram; const cost=s.grams*s.costPricePerGram; html+=`<tr><td style="white-space:nowrap">${new Date(s.dateISO).toLocaleString()}</td><td>${s.customerName || '—'}</td><td>${s.goldType || '—'}</td><td>${s.grams.toFixed(2)}</td><td>${formatCurrency(s.salePricePerGram)}</td><td>${formatCurrency(s.costPricePerGram)}</td><td>${formatCurrency(revenue-cost)}</td><td><button data-id="${s.id}" class="delSale secondary">Del</button></td></tr>`; } 
-        html+='</tbody></table>'; 
-        wrap.innerHTML=html; 
-        wrap.querySelectorAll('.delSale').forEach(btn=> btn.addEventListener('click', (e)=>{ 
-            const id = e.currentTarget.getAttribute('data-id'); 
-            showConfirm('Delete this sale?', () => {
-                state.sales = state.sales.filter(x=>x.id!==id); 
-                save(); 
-                renderAll(); 
-                showToast('Sale deleted'); 
-            });
-        })); 
-      }
-
-      function renderExpenses(){ 
-        const el=$('expensesList'); if(!el) return; 
-        if(state.expenses.length===0){ el.innerHTML='No expenses yet.'; return; } 
-        const items=state.expenses.slice().sort((a,b)=> new Date(b.dateISO)-new Date(a.dateISO)); 
-        el.innerHTML = items.map(i=> `<div style="padding:8px;border-bottom:1px dashed rgba(16,24,36,0.04)"><div style="display:flex;justify-content:space-between;"><span style="font-weight:600">${i.desc}</span> <span>${formatCurrency(i.amount)}</span></div><div class="small muted">${new Date(i.dateISO).toLocaleDateString()}</div></div>`).join(''); 
-      }
-
-      function computeSummary(){ 
-        const turnover = state.sales.reduce((s,x)=> s + x.grams*x.salePricePerGram,0); 
-        const totalCost = state.sales.reduce((s,x)=> s + x.grams*x.costPricePerGram,0); 
-        const grossProfit = turnover - totalCost; 
-        const totalExpenses = state.expenses.reduce((s,x)=> s + x.amount,0); 
-        const netProfit = grossProfit - totalExpenses; 
-        return {turnover,totalCost,grossProfit,totalExpenses,netProfit}; 
-      }
-
-      function renderSummary(){ 
-        const s = computeSummary(); 
-        $('turnover').textContent = formatCurrency(s.turnover); 
-        $('totalCost').textContent = formatCurrency(s.totalCost); 
-        $('grossProfit').textContent = formatCurrency(s.grossProfit); 
-        $('totalExpenses').textContent = formatCurrency(s.totalExpenses); 
-        $('netProfit').textContent = formatCurrency(s.netProfit); 
-        renderChart(); 
-      }
-
-      function renderChart(){ 
-        const canvas=$('turnoverChartCanvas'); if(!canvas) return; 
-        const ctx=canvas.getContext('2d');
-        const sales = state.sales.slice().sort((a,b)=> new Date(a.dateISO)-new Date(b.dateISO)); 
-        
-        if (turnoverChartInstance) {
-            turnoverChartInstance.destroy();
+        function initializeFirebase() {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            db = firebase.firestore();
+            fetchSales();
         }
 
-        if(sales.length===0) return; 
+        function formatCurrency(n) {
+            return '₦' + Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
+        }
 
-        let cum=0; 
-        const chartData = sales.map(s=>{ cum += s.grams*s.salePricePerGram; return {t:new Date(s.dateISO), v:cum}; }); 
+        async function fetchSales() {
+            const salesTableBody = document.querySelector('#salesTable tbody');
+            salesTableBody.innerHTML = '';
+            
+            const turnoverValue = document.getElementById('turnoverValue');
+            const totalCostValue = document.getElementById('totalCostValue');
+            const grossProfitValue = document.getElementById('grossProfitValue');
+
+            let totalTurnover = 0;
+            let totalCost = 0;
+            let totalProfit = 0;
+
+            try {
+                const snapshot = await db.collection('sales').orderBy('timestamp', 'desc').get();
+                if (snapshot.empty) {
+                    salesTableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--muted-text);">No sales recorded yet.</td></tr>';
+                    turnoverValue.textContent = formatCurrency(0);
+                    totalCostValue.textContent = formatCurrency(0);
+                    grossProfitValue.textContent = formatCurrency(0);
+                    return;
+                }
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const profit = (data.salePrice - data.costPrice) * data.amount;
+                    const turnover = data.salePrice * data.amount;
+                    const cost = data.costPrice * data.amount;
+
+                    totalTurnover += turnover;
+                    totalCost += cost;
+                    totalProfit += profit;
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${new Date(data.timestamp).toLocaleString()}</td>
+                        <td>${formatCurrency(data.salePrice)}</td>
+                        <td>${data.amount.toFixed(2)}</td>
+                        <td>${formatCurrency(data.costPrice)}</td>
+                        <td>${formatCurrency(profit)}</td>
+                        <td><button class="delete-btn" data-id="${doc.id}">Delete</button></td>
+                    `;
+                    salesTableBody.appendChild(row);
+                });
+
+                turnoverValue.textContent = formatCurrency(totalTurnover);
+                totalCostValue.textContent = formatCurrency(totalCost);
+                grossProfitValue.textContent = formatCurrency(totalProfit);
+
+                // Add event listeners for delete buttons
+                document.querySelectorAll('.delete-btn').forEach(btn => {
+                    btn.addEventListener('click', deleteSale);
+                });
+
+            } catch (error) {
+                console.error("Error fetching sales:", error);
+            }
+        }
+
+        async function addSale() {
+            const salePrice = parseFloat(document.getElementById('salePrice').value);
+            const amount = parseFloat(document.getElementById('amount').value);
+            const costPrice = parseFloat(document.getElementById('costPrice').value);
+
+            if (!salePrice || !amount || !costPrice || salePrice <= 0 || amount <= 0 || costPrice <= 0) {
+                alert('Please enter valid numbers for all fields.');
+                return;
+            }
+
+            const newSale = {
+                salePrice: salePrice,
+                amount: amount,
+                costPrice: costPrice,
+                timestamp: new Date().toISOString()
+            };
+
+            try {
+                await db.collection('sales').add(newSale);
+                document.getElementById('salePrice').value = '';
+                document.getElementById('amount').value = '';
+                document.getElementById('costPrice').value = '';
+                fetchSales();
+            } catch (error) {
+                console.error("Error adding sale:", error);
+            }
+        }
         
-        turnoverChartInstance = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: chartData.map(d => d.t.toLocaleDateString()),
-                datasets: [{
-                    label: 'Cumulative Turnover',
-                    data: chartData.map(d => d.v),
-                    borderColor: 'var(--accent-strong)',
-                    backgroundColor: 'var(--glass)',
-                    borderWidth: 2,
-                    pointRadius: 0,
-                    tension: 0.3,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: { 
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return '₦' + (value/1000) + 'k';
-                            },
-                            font: { size: 10 }
-                        }
-                    },
-                    x: {
-                        ticks: {
-                           display: false
-                        }
-                    }
-                },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return `Turnover: ${formatCurrency(context.parsed.y)}`;
-                            }
-                        }
-                    }
+        async function deleteSale(event) {
+            const id = event.target.dataset.id;
+            if (confirm("Are you sure you want to delete this sale?")) {
+                try {
+                    await db.collection('sales').doc(id).delete();
+                    fetchSales();
+                } catch (error) {
+                    console.error("Error removing sale: ", error);
                 }
             }
-        });
-      }
-
-      function renderAll(){ renderSales(); renderExpenses(); renderSummary(); }
-      renderAll();
-
-      $('defaultSellPerGram').addEventListener('input', (e)=>{ if($('salePrice')) $('salePrice').value = e.target.value; });
-      $('defaultCostPerGram').addEventListener('input', (e)=>{ if($('costPrice')) $('costPrice').value = e.target.value; });
-    });
-  </script>
+        }
+        
+        function exportCSV() {
+            db.collection('sales').orderBy('timestamp', 'desc').get().then(snapshot => {
+                let rows = [['Date', 'Sale Price (N)', 'Weight (g)', 'Cost Price (N)', 'Profit (N)']];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const profit = (data.salePrice - data.costPrice) * data.amount;
+                    rows.push([
+                        new Date(data.timestamp).toLocaleString(),
+                        data.salePrice,
+                        data.amount,
+                        data.costPrice,
+                        profit
+                    ]);
+                });
+                
+                const csvContent = rows.map(e => e.join(",")).join("\n");
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.setAttribute("href", url);
+                link.setAttribute("download", "gold_sales_data.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }).catch(error => {
+                console.error("Error exporting CSV:", error);
+            });
+        }
+        
+        document.getElementById('addSaleBtn').addEventListener('click', addSale);
+        document.getElementById('exportCsvBtn').addEventListener('click', exportCSV);
+    </script>
 </body>
 </html>
