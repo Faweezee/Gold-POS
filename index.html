@@ -299,15 +299,16 @@
 
   
     <script>
+    // --- YOUR FIREBASE CONFIGURATION ---
     const firebaseConfig = {
-        apiKey: "AIzaSyBSSRpPRIADDgIfzgPG-WYmb4-kwS1EtmA",
-        authDomain: "gold-pos-tracker.firebaseapp.com",
-        projectId: "gold-pos-tracker",
-        storageBucket: "gold-pos-tracker.firebasestorage.app",
-        messagingSenderId: "630931260385",
-        appId: "1:630931260385:web:7d6c95ee8e34b8d2bc88a0"
+      apiKey: "AIzaSyBSSRpPRIADDgIfzgPG-WYmb4-kwS1EtmA",
+      authDomain: "gold-pos-tracker.firebaseapp.com",
+      projectId: "gold-pos-tracker",
+      storageBucket: "gold-pos-tracker.firebasestorage.app",
+      messagingSenderId: "630931260385",
+      appId: "1:630931260385:web:7d6c95ee8e34b8d2bc88a0"
     };
-    
+
     let db;
     let auth;
 
@@ -377,7 +378,6 @@
     }
 
     async function fetchSales() {
-        // ... (Your fetchSales logic) ...
         const salesTableBody = document.querySelector('#salesTable tbody');
         salesTableBody.innerHTML = '';
         
@@ -390,7 +390,12 @@
         let totalProfit = 0;
         
         try {
-            const snapshot = await db.collection('sales').orderBy('timestamp', 'desc').get();
+            const userId = auth.currentUser.uid;
+            const snapshot = await db.collection('sales')
+                .where('userId', '==', userId)
+                .orderBy('timestamp', 'desc')
+                .get();
+        
             if (snapshot.empty) {
                 salesTableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--muted-text);">No sales recorded yet.</td></tr>';
                 turnoverValue.textContent = formatCurrency(0);
@@ -435,7 +440,6 @@
     }
 
     async function addSale() {
-        // ... (Your addSale logic) ...
         const salePrice = parseFloat(document.getElementById('salePrice').value);
         const amount = parseFloat(document.getElementById('amount').value);
         const costPrice = parseFloat(document.getElementById('costPrice').value);
@@ -449,7 +453,9 @@
             salePrice: salePrice,
             amount: amount,
             costPrice: costPrice,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            // Add the current user's UID to the document
+            userId: auth.currentUser.uid 
         };
 
         try {
@@ -464,7 +470,6 @@
     }
 
     async function deleteSale(event) {
-        // ... (Your deleteSale logic) ...
         const id = event.target.dataset.id;
         if (confirm("Are you sure you want to delete this sale?")) {
             try {
@@ -477,35 +482,39 @@
     }
 
     function exportCSV() {
-        // ... (Your exportCSV logic) ...
-        db.collection('sales').orderBy('timestamp', 'desc').get().then(snapshot => {
-            let rows = [['Date', 'Sale Price (N)', 'Weight (g)', 'Cost Price (N)', 'Profit (N)']];
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                const profit = (data.salePrice - data.costPrice) * data.amount;
-                rows.push([
-                    new Date(data.timestamp).toLocaleString(),
-                    data.salePrice,
-                    data.amount,
-                    data.costPrice,
-                    profit
-                ]);
+        const userId = auth.currentUser.uid;
+        
+        db.collection('sales')
+            .where('userId', '==', userId)
+            .orderBy('timestamp', 'desc')
+            .get()
+            .then(snapshot => {
+                let rows = [['Date', 'Sale Price (N)', 'Weight (g)', 'Cost Price (N)', 'Profit (N)']];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const profit = (data.salePrice - data.costPrice) * data.amount;
+                    rows.push([
+                        new Date(data.timestamp).toLocaleString(),
+                        data.salePrice,
+                        data.amount,
+                        data.costPrice,
+                        profit
+                    ]);
+                });
+                
+                const csvContent = rows.map(e => e.join(",")).join("\n");
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.setAttribute("href", url);
+                link.setAttribute("download", "gold_sales_data.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }).catch(error => {
+                console.error("Error exporting CSV:", error);
             });
-            
-            const csvContent = rows.map(e => e.join(",")).join("\n");
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.setAttribute("href", url);
-            link.setAttribute("download", "gold_sales_data.csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }).catch(error => {
-            console.error("Error exporting CSV:", error);
-        });
     }
-
 </script>
 </body>
 </html>
